@@ -1,0 +1,183 @@
+import SwiftUI
+
+struct HomeView: View {
+    @Bindable var viewModel: AppViewModel
+    @Environment(AuthManager.self) private var authManager
+
+    @State private var titleOpacity: Double = 0
+    @State private var titleScale: CGFloat = 0.88
+    @State private var titleBlur: CGFloat = 8
+    @State private var lineWidth: CGFloat = 0
+    @State private var subtitleOpacity: Double = 0
+    @State private var bottomBarOpacity: Double = 0
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            CosmicBackground()
+
+            VStack(spacing: 0) {
+                // Top bar with auth
+                HStack {
+                    Spacer()
+                    if authManager.isAuthenticated {
+                        Menu {
+                            if let email = authManager.userEmail {
+                                Text(email)
+                            }
+                            Button("Sign Out", role: .destructive) {
+                                authManager.signOut()
+                            }
+                        } label: {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(.white.opacity(0.5))
+                        }
+                    } else {
+                        Button {
+                            Task { await authManager.signInWithGoogle() }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .font(.system(size: 14))
+                                Text("Sign In")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundStyle(.white.opacity(0.6))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(.white.opacity(0.06))
+                                    .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                            )
+                        }
+                        .disabled(authManager.isAuthenticating)
+                        .opacity(authManager.isAuthenticating ? 0.5 : 1)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .opacity(bottomBarOpacity)
+
+                Spacer()
+
+                // Personalized greeting
+                Text(greetingText)
+                    .font(.system(size: 32, weight: .thin))
+                    .tracking(4)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .padding(.horizontal, 32)
+                    .opacity(titleOpacity)
+                    .scaleEffect(titleScale)
+                    .blur(radius: titleBlur)
+
+                // Divider line
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.clear, .white.opacity(0.12), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: lineWidth, height: 0.5)
+                    .padding(.top, 12)
+
+                // Tagline
+                Text("what can i help with?")
+                    .font(.system(size: 11, weight: .light, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.white.opacity(0.22))
+                    .opacity(subtitleOpacity)
+                    .padding(.top, 10)
+
+                Spacer()
+            }
+
+            // Auth error toast
+            if let error = authManager.authError {
+                VStack {
+                    Text(error)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(Color.red.opacity(0.3))
+                                .stroke(Color.red.opacity(0.4), lineWidth: 0.5)
+                        )
+                        .padding(.top, 60)
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            // Orb + live feedback area
+            VStack(spacing: 0) {
+                Spacer()
+
+                ParticleOrbView(viewModel: viewModel)
+                    .opacity(bottomBarOpacity)
+
+                // Live transcript (below orb, visible during recording)
+                Text(viewModel.liveTranscript)
+                    .font(.system(size: 14, weight: .light, design: .monospaced))
+                    .foregroundStyle(.white.opacity(viewModel.isRecording && !viewModel.liveTranscript.isEmpty ? 0.5 : 0))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .frame(height: 50)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
+
+                // Status message
+                Text(viewModel.statusMessage ?? " ")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .tracking(1)
+                    .foregroundStyle(.white.opacity(viewModel.statusMessage != nil ? 0.35 : 0))
+                    .frame(height: 16)
+
+                Spacer()
+                    .frame(height: 20)
+            }
+        }
+        .onAppear {
+            runEntrance()
+        }
+    }
+
+    private var greetingText: String {
+        if let name = authManager.firstName {
+            return "Hi, \(name)"
+        }
+        return "Hi there"
+    }
+
+    private func runEntrance() {
+        // Title reveals with blur-to-sharp
+        withAnimation(.easeOut(duration: 1.8)) {
+            titleOpacity = 1
+            titleScale = 1.0
+            titleBlur = 0
+        }
+
+        // Line extends
+        withAnimation(.easeOut(duration: 1.0).delay(0.6)) {
+            lineWidth = 60
+        }
+
+        // Subtitles fade in
+        withAnimation(.easeOut(duration: 0.8).delay(1.0)) {
+            subtitleOpacity = 1
+        }
+
+        // Bottom bar appears last
+        withAnimation(.easeOut(duration: 0.6).delay(1.6)) {
+            bottomBarOpacity = 1
+        }
+    }
+}

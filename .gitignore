@@ -1,0 +1,12 @@
+.DS_Store
+build/
+*.xcuserstate
+xcuserdata/
+.claude/
+
+# Backend
+backend/.venv/
+backend/.env
+__pycache__/
+*.pyc
+*.egg-info/

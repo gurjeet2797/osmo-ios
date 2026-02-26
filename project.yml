@@ -53,6 +53,14 @@ targets:
         group: ParticleOrb
       - path: ParticleOrb/ParticleSystem.swift
         group: ParticleOrb
+      - path: ParticleOrb/ParticleStateMachine.swift
+        group: ParticleOrb
+      - path: ParticleOrb/MotionControllers.swift
+        group: ParticleOrb
+      - path: ParticleOrb/MorphController.swift
+        group: ParticleOrb
+      - path: ParticleOrb/ShapeLibrary.swift
+        group: ParticleOrb
       # Services
       - path: Services/APIClient.swift
         group: Services

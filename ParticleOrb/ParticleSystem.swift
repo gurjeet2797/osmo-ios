@@ -58,11 +58,13 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
     // Touch
     private var touchPoint: SIMD2<Float>?
     private var touchInfluence: Float = 0
+    private var touchActive: Bool = false
 
-    // Morphing
-    private var morphStartTime: Double = 0
-    private var morphSourcePositions: [SIMD2<Float>] = []
-    private var morphTargetPositions: [SIMD2<Float>] = []
+    // Morph controller (replaces inline morph logic)
+    let morphController = MorphController()
+
+    // Current modulation (stored for swirlTarget access to breathe params)
+    private(set) var currentModulation: MotionModulation = .idle
 
     // Timing
     private var lastUpdateTime: Double?
@@ -78,51 +80,60 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
 
     // MARK: - Update Loop
 
-    func update(at time: Double) {
+    func update(at time: Double, modulation: MotionModulation = .idle) {
         guard let lastTime = lastUpdateTime else {
             lastUpdateTime = time
             return
         }
 
-        let dt = Float(min(time - lastTime, 1.0 / 30.0))
+        let rawDelta = time - lastTime
+        let dt = Float(min(max(rawDelta, 0), 1.0 / 30.0))
         lastUpdateTime = time
+        currentModulation = modulation
 
-        // Handle morphing progress
-        if case .morphing(let shapeID) = state {
-            let elapsed = time - morphStartTime
-            let progress = Float(min(elapsed / ParticlePhysics.morphDuration, 1.0))
-
-            if progress >= 1.0 {
-                state = shapeID == .orbit ? .swirling : .displayingShape(shapeID)
+        // Smooth touch influence ramp (time-based instead of per-call flat increment)
+        if touchActive {
+            touchInfluence = min(touchInfluence + 3.0 * dt, 1.0)
+        } else {
+            touchInfluence = max(touchInfluence - 4.0 * dt, 0.0)
+            if touchInfluence <= 0.001 {
+                touchPoint = nil
             }
+        }
 
-            for i in particles.indices {
-                let src = morphSourcePositions.indices.contains(i) ? morphSourcePositions[i] : particles[i].position
-                let dst = morphTargetPositions.indices.contains(i) ? morphTargetPositions[i] : swirlTarget(for: particles[i], time: time)
-                // Quintic ease for ultra-smooth morph
-                let x = progress
-                let t = x * x * x * (x * (x * 6.0 - 15.0) + 10.0)
-                particles[i].targetPosition = src + (dst - src) * t
+        // Handle morphing via MorphController
+        if case .morphing(let shapeID) = state {
+            if let interpolated = morphController.update(at: time) {
+                for i in particles.indices where i < interpolated.count {
+                    particles[i].targetPosition = interpolated[i]
+                }
+                // Check if morph completed
+                if !morphController.isActive {
+                    state = shapeID == .orbit ? .swirling : .displayingShape(shapeID)
+                }
+            } else {
+                // Morph controller no longer active — finalize
+                state = shapeID == .orbit ? .swirling : .displayingShape(shapeID)
             }
         }
 
         // Physics update per particle
         for i in particles.indices {
-            updateParticle(index: i, dt: dt, time: time)
+            updateParticle(index: i, dt: dt, time: time, modulation: modulation)
         }
     }
 
-    private func updateParticle(index i: Int, dt: Float, time: Double) {
+    private func updateParticle(index i: Int, dt: Float, time: Double, modulation: MotionModulation) {
         var p = particles[i]
         let t = Float(time)
 
-        // Advance orbit angle
-        p.orbitAngle += p.orbitSpeed * dt
+        // Advance orbit angle using modulation speed multiplier
+        p.orbitAngle += p.orbitSpeed * modulation.orbitSpeedMultiplier * dt
 
-        // Noise-driven wander for organic feel
+        // Noise-driven wander with modulation multiplier
         let nx = sin(t * ParticlePhysics.noiseSpeed + p.noiseOffsetX) * cos(t * 0.7 + p.phase)
         let ny = cos(t * ParticlePhysics.noiseSpeed * 0.8 + p.noiseOffsetY) * sin(t * 0.6 + p.phase * 1.3)
-        let noise = SIMD2<Float>(nx, ny) * ParticlePhysics.noiseStrength
+        let noise = SIMD2<Float>(nx, ny) * ParticlePhysics.noiseStrength * modulation.noiseMultiplier
 
         // Compute target based on state
         switch state {
@@ -130,13 +141,13 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
             p.targetPosition = swirlTarget(for: p, time: time) + noise
 
         case .morphing:
-            break // Updated above
+            break // Updated above via MorphController
 
         case .displayingShape:
-            if morphTargetPositions.indices.contains(i) {
-                let base = morphTargetPositions[i]
-                // Gentle breathing — expand/contract around shape
-                let breathe: Float = 1.0 + sin(t * 2.0) * 0.05
+            if let targets = morphController.targetPositions, targets.indices.contains(i) {
+                let base = targets[i]
+                // Gentle breathing using modulation params
+                let breathe: Float = 1.0 + sin(t * modulation.breatheFrequency * 4.0) * modulation.breatheAmplitude * 0.4
                 let breathedPos = base * breathe
                 let osc = SIMD2<Float>(
                     sin(t * 0.8 + p.phase) * 1.5,
@@ -146,9 +157,9 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
             }
         }
 
-        // Soft spring force
+        // Soft spring force using modulation stiffness/damping
         let displacement = p.targetPosition - p.position
-        var force = displacement * ParticlePhysics.springStiffness - p.velocity * ParticlePhysics.springDamping
+        var force = displacement * modulation.springStiffness - p.velocity * modulation.springDamping
 
         // Touch repulsion
         if let touch = touchPoint, touchInfluence > 0.01 {
@@ -170,10 +181,10 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
         }
         p.position += p.velocity * dt
 
-        // Brightness: gentle pulse
+        // Brightness using modulation params
         let normalizedSpeed = min(speed / ParticlePhysics.maxVelocity, 1.0)
-        let baseBrightness: Float = 0.5 + normalizedSpeed * 0.3
-        let pulse = sin(t * 1.5 + p.phase) * 0.15
+        let baseBrightness = modulation.brightnessBase + normalizedSpeed * 0.3
+        let pulse = sin(t * 1.5 + p.phase) * modulation.brightnessPulseAmp
         p.brightness = baseBrightness + pulse
 
         // Shape-specific brightness modulation
@@ -190,49 +201,12 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
 
     private func swirlTarget(for particle: Particle, time: Double) -> SIMD2<Float> {
         let t = Float(time)
-        let breathe = 1.0 + sin(t * 0.5 + particle.phase) * 0.12
+        let breathe = 1.0 + sin(t * currentModulation.breatheFrequency + particle.phase) * currentModulation.breatheAmplitude
         let r = particle.orbitRadius * breathe
         return SIMD2<Float>(
             cos(particle.orbitAngle) * r,
             sin(particle.orbitAngle) * r
         )
-    }
-
-    // MARK: - Nearest-Neighbor Assignment
-
-    /// Greedy nearest-neighbor: each source picks its closest available target.
-    /// Particles travel minimum distance — bottom stays bottom, top stays top.
-    private func assignNearestNeighbor(
-        sources: [SIMD2<Float>],
-        targets: [SIMD2<Float>]
-    ) -> [SIMD2<Float>] {
-        let count = sources.count
-        guard count > 0, !targets.isEmpty else { return sources }
-
-        var result = [SIMD2<Float>](repeating: .zero, count: count)
-        var usedTargets = [Bool](repeating: false, count: targets.count)
-
-        // For each source, find the nearest unused target
-        for si in 0..<count {
-            var bestDist: Float = .greatestFiniteMagnitude
-            var bestTi = -1
-            for ti in 0..<targets.count where !usedTargets[ti] {
-                let diff = sources[si] - targets[ti]
-                let d = diff.x * diff.x + diff.y * diff.y
-                if d < bestDist {
-                    bestDist = d
-                    bestTi = ti
-                }
-            }
-            if bestTi >= 0 {
-                result[si] = targets[bestTi]
-                usedTargets[bestTi] = true
-            } else {
-                result[si] = sources[si]
-            }
-        }
-
-        return result
     }
 
     // MARK: - State Transitions
@@ -250,19 +224,14 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
 
         let t = time ?? (lastUpdateTime ?? 0)
 
-        let rawTargets = ShapeRegistry.targets(
+        let rawTargets = ShapeLibrary.shared.targets(
             for: shapeID,
             count: particles.count,
             radius: shapeRadius
         )
 
-        morphSourcePositions = particles.map(\.position)
-        morphTargetPositions = assignNearestNeighbor(
-            sources: morphSourcePositions,
-            targets: rawTargets
-        )
-
-        morphStartTime = t
+        let sources = particles.map(\.position)
+        morphController.begin(from: sources, to: rawTargets, at: t, duration: ParticlePhysics.morphDuration)
         state = .morphing(to: shapeID)
     }
 
@@ -279,11 +248,9 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
 
         let t = time ?? (lastUpdateTime ?? 0)
 
-        // For swirl, each particle returns to its own orbit — index-based
-        morphSourcePositions = particles.map(\.position)
-        morphTargetPositions = particles.map { swirlTarget(for: $0, time: t) }
-
-        morphStartTime = t
+        let sources = particles.map(\.position)
+        let targets = particles.map { swirlTarget(for: $0, time: t) }
+        morphController.begin(from: sources, to: targets, at: t, duration: ParticlePhysics.morphDuration)
         state = .morphing(to: .orbit)
     }
 
@@ -313,12 +280,11 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
 
     func applyTouch(at point: SIMD2<Float>) {
         touchPoint = point
-        touchInfluence = min(touchInfluence + 0.15, 1.0)
+        touchActive = true
     }
 
     func releaseTouch() {
-        touchInfluence = 0
-        touchPoint = nil
+        touchActive = false
     }
 
     // MARK: - Generation

@@ -19,11 +19,12 @@ struct CosmicBackground: View {
     @State private var touchPoint: CGPoint? = nil
     @State private var touchInfluence: CGFloat = 0
     @State private var startDate = Date()
+    @State private var isInteracting: Bool = false
 
     private static let starCount = 120
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+        TimelineView(.animation(minimumInterval: isInteracting ? 1.0 / 60.0 : 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let elapsed = timeline.date.timeIntervalSince(startDate)
 
@@ -52,11 +53,13 @@ struct CosmicBackground: View {
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
                         touchPoint = value.location
+                        isInteracting = true
                         withAnimation(.easeIn(duration: 0.2)) {
                             touchInfluence = 1.0
                         }
                     }
                     .onEnded { _ in
+                        isInteracting = false
                         withAnimation(.easeOut(duration: 0.8)) {
                             touchInfluence = 0
                         }
@@ -66,6 +69,14 @@ struct CosmicBackground: View {
                             }
                         }
                     }
+            )
+        }
+        .visualEffect { content, proxy in
+            content.colorEffect(
+                ShaderLibrary.auroraWash(
+                    .float2(Float(proxy.size.width), Float(proxy.size.height)),
+                    .float(Float(Date.now.timeIntervalSinceReferenceDate))
+                )
             )
         }
         .ignoresSafeArea()

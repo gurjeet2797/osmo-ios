@@ -179,13 +179,28 @@ struct ControlCenterView: View {
                 .foregroundStyle(.white.opacity(0.3))
                 .padding(.top, 8)
 
-            // Placeholder events — will be replaced by EventKit data
-            ForEach(0..<3, id: \.self) { i in
-                eventRow(
-                    time: ["9:00 AM", "12:30 PM", "3:00 PM"][i],
-                    title: ["Team Standup", "Lunch", "Design Review"][i]
-                )
+            if viewModel.isLoadingEvents {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .tint(.white.opacity(0.3))
+                    Spacer()
+                }
+                .padding(.vertical, 20)
+            } else if viewModel.upcomingEvents.isEmpty {
+                Text("No upcoming events")
+                    .font(.system(size: 13, weight: .light, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.25))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+            } else {
+                ForEach(viewModel.upcomingEvents) { event in
+                    eventRow(time: event.formattedTime, title: event.title)
+                }
             }
+        }
+        .task {
+            viewModel.fetchUpcomingEvents()
         }
     }
 

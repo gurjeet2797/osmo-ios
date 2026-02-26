@@ -13,6 +13,10 @@ final class AppViewModel {
     var errorMessage: String?
     var pendingConfirmation: PendingConfirmation?
 
+    // Calendar
+    var upcomingEvents: [CalendarEvent] = []
+    var isLoadingEvents: Bool = false
+
     // Recording
     let speechRecognizer = SpeechRecognizer()
     var isRecording: Bool = false
@@ -55,10 +59,25 @@ final class AppViewModel {
         case category4 = "Category 4"
     }
 
+    var needsConfirmation: Bool { pendingConfirmation != nil }
+
     struct PendingConfirmation {
         let planId: String
         let prompt: String
         let messageId: UUID
+    }
+
+    func fetchUpcomingEvents() {
+        isLoadingEvents = true
+        Task {
+            do {
+                let events = try await apiClient.fetchUpcomingEvents()
+                upcomingEvents = events
+            } catch {
+                // Silently fail — the view shows placeholder text
+            }
+            isLoadingEvents = false
+        }
     }
 
     func addGreetingIfNeeded() {

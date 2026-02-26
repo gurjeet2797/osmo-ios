@@ -129,6 +129,17 @@ nonisolated enum PathSampler {
         return lo
     }
 
+    /// Sample points along a path with an optional Y anchor offset applied after normalization.
+    static func sampleWithAnchor(path: CGPath, count: Int, fitRadius: Float, anchorY: Float = 0) -> [SIMD2<Float>] {
+        var points = sample(path: path, count: count, fitRadius: fitRadius)
+        if anchorY != 0 {
+            for i in points.indices {
+                points[i].y += anchorY
+            }
+        }
+        return points
+    }
+
     private static func normalizePoints(_ points: [SIMD2<Float>], fitRadius: Float) -> [SIMD2<Float>] {
         guard !points.isEmpty else { return points }
 

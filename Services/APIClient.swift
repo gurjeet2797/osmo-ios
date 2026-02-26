@@ -68,6 +68,13 @@ final class APIClient: Sendable {
         return try await post(path: "/command/device-result", body: request)
     }
 
+    // MARK: - Calendar
+
+    func fetchUpcomingEvents(days: Int = 1) async throws -> [CalendarEvent] {
+        let response: UpcomingEventsResponse = try await get(path: "/calendar/upcoming?days=\(days)")
+        return response.events
+    }
+
     // MARK: - Health
 
     func healthCheck() async throws -> Bool {

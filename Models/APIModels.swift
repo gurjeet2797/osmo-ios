@@ -128,6 +128,46 @@ struct HealthResponse: Codable, Sendable {
     let status: String
 }
 
+// MARK: - Calendar
+
+struct UpcomingEventsResponse: Codable, Sendable {
+    let events: [CalendarEvent]
+}
+
+struct CalendarEvent: Codable, Sendable, Identifiable {
+    let id: String
+    let title: String
+    let start: String
+    let end: String
+    let location: String?
+    let allDay: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, start, end, location
+        case allDay = "all_day"
+    }
+
+    var startDate: Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: start) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: start) { return date }
+        // All-day events: "2026-02-25"
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "yyyy-MM-dd"
+        return dayFormatter.date(from: start)
+    }
+
+    var formattedTime: String {
+        if allDay { return "All day" }
+        guard let date = startDate else { return start }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
+    }
+}
+
 // MARK: - API Error
 
 struct APIErrorResponse: Codable, Sendable {

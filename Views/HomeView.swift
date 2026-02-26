@@ -10,6 +10,17 @@ struct HomeView: View {
     @State private var lineWidth: CGFloat = 0
     @State private var subtitleOpacity: Double = 0
     @State private var bottomBarOpacity: Double = 0
+    @State private var tipIndex: Int = 0
+    @State private var tipOpacity: Double = 1.0
+
+    private let tips: [String] = [
+        "what can i help with?",
+        "tap and hold the orb for controls",
+        "try: \"schedule a meeting tomorrow\"",
+        "swipe up to open the chat",
+        "say: \"what's on my calendar today?\"",
+        "tap the orb to start voice input",
+    ]
 
     var body: some View {
         ZStack {
@@ -87,13 +98,14 @@ struct HomeView: View {
                     .frame(width: lineWidth, height: 0.5)
                     .padding(.top, 12)
 
-                // Tagline
-                Text("what can i help with?")
+                // Rotating tips
+                Text(tips[tipIndex])
                     .font(.system(size: 11, weight: .light, design: .monospaced))
                     .tracking(2)
                     .foregroundStyle(.white.opacity(0.22))
-                    .opacity(subtitleOpacity)
+                    .opacity(subtitleOpacity * tipOpacity)
                     .padding(.top, 10)
+                    .frame(height: 20)
 
                 Spacer()
             }
@@ -117,36 +129,53 @@ struct HomeView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // Orb + live feedback area
+            // Orb — pinned to bottom
             VStack(spacing: 0) {
                 Spacer()
 
                 ParticleOrbView(viewModel: viewModel)
                     .opacity(bottomBarOpacity)
+                    .padding(.bottom, -20)
+            }
+            .ignoresSafeArea(edges: .bottom)
 
-                // Live transcript (below orb, visible during recording)
+            // Live transcript + status — floating above bottom
+            VStack(spacing: 2) {
+                Spacer()
+
                 Text(viewModel.liveTranscript)
                     .font(.system(size: 14, weight: .light, design: .monospaced))
                     .foregroundStyle(.white.opacity(viewModel.isRecording && !viewModel.liveTranscript.isEmpty ? 0.5 : 0))
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
-                    .frame(height: 50)
                     .padding(.horizontal, 40)
-                    .padding(.top, 8)
 
-                // Status message
                 Text(viewModel.statusMessage ?? " ")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .tracking(1)
                     .foregroundStyle(.white.opacity(viewModel.statusMessage != nil ? 0.35 : 0))
                     .frame(height: 16)
-
-                Spacer()
-                    .frame(height: 20)
+                    .padding(.bottom, 4)
             }
         }
         .onAppear {
             runEntrance()
+        }
+        .task {
+            // Wait for entrance animation to finish
+            try? await Task.sleep(for: .seconds(3.0))
+            // Rotate tips every 4 seconds
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(4.0))
+                withAnimation(.easeOut(duration: 0.5)) {
+                    tipOpacity = 0
+                }
+                try? await Task.sleep(for: .seconds(0.5))
+                tipIndex = (tipIndex + 1) % tips.count
+                withAnimation(.easeIn(duration: 0.5)) {
+                    tipOpacity = 1.0
+                }
+            }
         }
     }
 

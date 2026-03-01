@@ -72,13 +72,20 @@ def _generate_pkce() -> tuple[str, str]:
 
 @router.get("/debug/redirect-uris")
 async def debug_redirect_uris():
-    """Temporary debug endpoint — shows configured redirect URIs."""
+    """Temporary debug endpoint — shows configured redirect URIs and test auth URL."""
     base = settings.google_redirect_uri
     mobile = base.replace("/callback", "/callback/mobile")
+
+    # Build a test auth URL to inspect the redirect_uri param Google will see
+    flow = _build_flow()
+    flow.redirect_uri = mobile
+    auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
+
     return {
         "base_redirect_uri": base,
         "mobile_redirect_uri": mobile,
         "client_id": settings.google_client_id[:20] + "..." if settings.google_client_id else "<not set>",
+        "test_auth_url": auth_url,
     }
 
 

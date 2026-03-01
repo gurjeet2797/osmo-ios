@@ -5,6 +5,8 @@ private let pointsOfInterest = OSLog(subsystem: "com.yourcompany.Osmo", category
 
 struct ParticleOrbView: View {
     @Bindable var viewModel: AppViewModel
+    /// Number of particles to render (0 = use system default). Animatable.
+    var visibleParticleCount: Int = 0
 
     @State private var system = ParticleSystem()
     @State private var opacity: Double = 0.0
@@ -167,7 +169,8 @@ struct ParticleOrbView: View {
                 modulation.globalScale *= envScale
 
                 // Reduce motion: fewer particles, no bobbing, near-instant morph
-                let particleCount = reduceMotion ? min(50, system.particles.count) : system.particles.count
+                let fullCount = reduceMotion ? min(50, system.particles.count) : system.particles.count
+                let particleCount = visibleParticleCount > 0 ? min(visibleParticleCount, fullCount) : fullCount
 
                 os_signpost(.begin, log: pointsOfInterest, name: "OrbUpdate")
                 system.update(at: time, modulation: modulation)

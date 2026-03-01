@@ -113,17 +113,18 @@ struct HomeView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // Orb — pinned to bottom (hidden during onboarding until "done" step)
-            if !onboarding.isActive || onboarding.currentStep == .done {
-                VStack(spacing: 0) {
-                    Spacer()
+            // Orb — always visible, particle count grows during onboarding
+            VStack(spacing: 0) {
+                Spacer()
 
-                    ParticleOrbView(viewModel: viewModel)
-                        .opacity(bottomBarOpacity)
-                        .padding(.bottom, -20)
-                }
-                .ignoresSafeArea(edges: .bottom)
+                ParticleOrbView(
+                    viewModel: viewModel,
+                    visibleParticleCount: onboarding.isActive ? onboardingParticleCount : 0
+                )
+                .opacity(bottomBarOpacity)
+                .padding(.bottom, -20)
             }
+            .ignoresSafeArea(edges: .bottom)
 
             // Live transcript + status — floating above bottom
             VStack(spacing: 2) {
@@ -182,6 +183,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private var onboardingContent: some View {
+        // Title + subtitle centered
         VStack(spacing: 16) {
             Text(onboarding.titleText)
                 .font(.system(size: 32, weight: .thin))
@@ -208,26 +210,38 @@ struct HomeView: View {
                 .foregroundStyle(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-
-            if let label = onboarding.buttonLabel {
-                Button {
-                    handleOnboardingAction()
-                } label: {
-                    Text(label)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(.white.opacity(0.06))
-                                .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                        )
-                }
-                .padding(.top, 8)
-            }
         }
         .opacity(onboarding.stepOpacity)
+
+        Spacer()
+
+        // Button between text and orb — easy thumb reach
+        if let label = onboarding.buttonLabel {
+            Button {
+                handleOnboardingAction()
+            } label: {
+                Text(label)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(.white.opacity(0.06))
+                            .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                    )
+            }
+            .opacity(onboarding.stepOpacity)
+            .padding(.bottom, 40)
+        }
+    }
+
+    /// Particle count grows evenly across onboarding steps: ~25 per step → 150 at done
+    private var onboardingParticleCount: Int {
+        let stepsCount = OnboardingManager.Step.allCases.count
+        let perStep = 150 / stepsCount  // 25 per step
+        let stepIndex = OnboardingManager.Step.allCases.firstIndex(of: onboarding.currentStep) ?? 0
+        return max(perStep, perStep * (stepIndex + 1))
     }
 
     // MARK: - Normal Content

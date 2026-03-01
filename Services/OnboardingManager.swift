@@ -15,6 +15,13 @@ final class OnboardingManager {
     var isActive: Bool { !hasCompleted }
     var stepOpacity: Double = 1.0
 
+    /// 0.0 at welcome → 1.0 at done — drives orb growth
+    var progress: CGFloat {
+        let allSteps = Step.allCases
+        guard let idx = allSteps.firstIndex(of: currentStep) else { return 0 }
+        return CGFloat(idx) / CGFloat(max(allSteps.count - 1, 1))
+    }
+
     @ObservationIgnored
     private var _hasCompleted: Bool = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 

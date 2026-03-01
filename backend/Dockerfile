@@ -5,11 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Install dependencies from pyproject.toml without installing the project itself
 COPY pyproject.toml ./
-# Install dependencies only (create minimal package stub so pip resolves)
-RUN mkdir -p app && touch app/__init__.py && \
-    pip install --no-cache-dir . && \
-    rm -rf app
+RUN pip install --no-cache-dir $(python -c "import tomllib; deps=tomllib.load(open('pyproject.toml','rb'))['project']['dependencies']; print(' '.join(deps))")
 
 COPY . .
 

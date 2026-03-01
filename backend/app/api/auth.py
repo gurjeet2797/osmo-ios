@@ -70,6 +70,18 @@ def _generate_pkce() -> tuple[str, str]:
     return code_verifier, code_challenge
 
 
+@router.get("/debug/redirect-uris")
+async def debug_redirect_uris():
+    """Temporary debug endpoint — shows configured redirect URIs."""
+    base = settings.google_redirect_uri
+    mobile = base.replace("/callback", "/callback/mobile")
+    return {
+        "base_redirect_uri": base,
+        "mobile_redirect_uri": mobile,
+        "client_id": settings.google_client_id[:20] + "..." if settings.google_client_id else "<not set>",
+    }
+
+
 @router.post("/google")
 async def start_google_oauth(mobile: bool = True):
     flow = _build_flow()

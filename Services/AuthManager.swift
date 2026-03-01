@@ -114,6 +114,10 @@ final class AuthManager {
             dict[item.name] = item.value
         } ?? [:]
 
+        if let error = params["error"], !error.isEmpty {
+            throw APIError.serverError(400, error)
+        }
+
         guard let token = params["token"], !token.isEmpty else {
             throw APIError.serverError(400, "No token in auth callback")
         }

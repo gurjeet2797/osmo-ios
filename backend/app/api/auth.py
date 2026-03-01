@@ -6,6 +6,7 @@ import os
 import base64
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from google_auth_oauthlib.flow import Flow
 from sqlalchemy import select
@@ -15,6 +16,8 @@ from app.config import settings
 from app.db.session import get_db
 from app.dependencies import create_access_token, get_fernet
 from app.models.user import User
+
+log = structlog.get_logger()
 
 router = APIRouter()
 
@@ -81,7 +84,21 @@ async def google_callback(
 ):
     flow = _build_flow()
     code_verifier = _pkce_store.pop(state, None)
-    flow.fetch_token(code=code, code_verifier=code_verifier)
+    if code_verifier is None:
+        log.warning("google_callback: PKCE verifier not found", state=state)
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "OAuth session expired or server restarted. Please sign in again.",
+        )
+
+    try:
+        flow.fetch_token(code=code, code_verifier=code_verifier)
+    except Exception as exc:
+        log.error("google_callback: token exchange failed", error=str(exc))
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Google token exchange failed: {exc}",
+        )
     credentials = flow.credentials
 
     import httpx
@@ -135,10 +152,23 @@ async def google_callback_mobile(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Mobile OAuth callback — redirects to osmo:// custom URL scheme."""
+    from urllib.parse import urlencode
+    from fastapi.responses import RedirectResponse
+
     flow = _build_flow()
     flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
     code_verifier = _pkce_store.pop(state, None)
-    flow.fetch_token(code=code, code_verifier=code_verifier)
+    if code_verifier is None:
+        log.warning("google_callback_mobile: PKCE verifier not found", state=state)
+        params = urlencode({"error": "OAuth session expired. Please try signing in again."})
+        return RedirectResponse(url=f"osmo://auth/callback?{params}")
+
+    try:
+        flow.fetch_token(code=code, code_verifier=code_verifier)
+    except Exception as exc:
+        log.error("google_callback_mobile: token exchange failed", error=str(exc))
+        params = urlencode({"error": f"Sign-in failed: {exc}"})
+        return RedirectResponse(url=f"osmo://auth/callback?{params}")
     credentials = flow.credentials
 
     import httpx
@@ -149,12 +179,14 @@ async def google_callback_mobile(
             headers={"Authorization": f"Bearer {credentials.token}"},
         )
         if resp.status_code != 200:
-            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Failed to fetch user info")
+            params = urlencode({"error": "Failed to fetch user info from Google."})
+            return RedirectResponse(url=f"osmo://auth/callback?{params}")
         user_info = resp.json()
 
     email = user_info.get("email")
     if not email:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No email in Google response")
+        params = urlencode({"error": "No email in Google response."})
+        return RedirectResponse(url=f"osmo://auth/callback?{params}")
 
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
@@ -182,9 +214,6 @@ async def google_callback_mobile(
     await db.refresh(user)
 
     access_token = create_access_token(str(user.id))
-
-    from urllib.parse import urlencode
-    from fastapi.responses import RedirectResponse
 
     params = urlencode({"token": access_token, "email": email})
     return RedirectResponse(url=f"osmo://auth/callback?{params}")

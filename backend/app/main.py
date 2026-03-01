@@ -25,6 +25,10 @@ if settings.sentry_dsn:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    log = structlog.get_logger()
+    from urllib.parse import urlparse
+    db_host = urlparse(settings.database_url).hostname or "unknown"
+    log.info("Starting Osmo backend", db_host=db_host, environment=settings.environment)
     yield
     await engine.dispose()
 

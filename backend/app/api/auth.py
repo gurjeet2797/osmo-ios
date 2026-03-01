@@ -25,19 +25,25 @@ _PKCE_PREFIX = "pkce:"
 _PKCE_TTL = 600  # 10 minutes
 
 
-async def _store_pkce(state: str, verifier: str) -> None:
+async def _store_pkce(state: str, verifier: str, *, mobile: bool = False) -> None:
     r = await get_redis()
-    await r.set(f"{_PKCE_PREFIX}{state}", verifier, ex=_PKCE_TTL)
+    payload = json.dumps({"verifier": verifier, "mobile": mobile})
+    await r.set(f"{_PKCE_PREFIX}{state}", payload, ex=_PKCE_TTL)
 
 
-async def _pop_pkce(state: str) -> str | None:
+async def _pop_pkce(state: str) -> tuple[str, bool] | None:
+    """Return (verifier, mobile) or None if expired/missing."""
     r = await get_redis()
     key = f"{_PKCE_PREFIX}{state}"
     async with r.pipeline(transaction=True) as pipe:
         pipe.get(key)
         pipe.delete(key)
         result = await pipe.execute()
-    return result[0]  # value or None
+    raw = result[0]
+    if raw is None:
+        return None
+    data = json.loads(raw)
+    return data["verifier"], data["mobile"]
 
 GOOGLE_SCOPES = [
     "openid",
@@ -70,35 +76,13 @@ def _generate_pkce() -> tuple[str, str]:
     return code_verifier, code_challenge
 
 
-@router.get("/debug/redirect-uris")
-async def debug_redirect_uris():
-    """Temporary debug endpoint — shows configured redirect URIs and test auth URL."""
-    base = settings.google_redirect_uri
-    mobile = base.replace("/callback", "/callback/mobile")
-
-    # Build a test auth URL to inspect the redirect_uri param Google will see
-    flow = _build_flow()
-    flow.redirect_uri = mobile
-    auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
-
-    return {
-        "base_redirect_uri": base,
-        "mobile_redirect_uri": mobile,
-        "client_id": settings.google_client_id[:20] + "..." if settings.google_client_id else "<not set>",
-        "test_auth_url": auth_url,
-    }
-
-
 @router.post("/google")
 async def start_google_oauth(mobile: bool = True):
     flow = _build_flow()
-    if mobile:
-        flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
 
     log.info(
         "start_google_oauth",
         redirect_uri=flow.redirect_uri,
-        base_redirect_uri=settings.google_redirect_uri,
         mobile=mobile,
     )
 
@@ -112,7 +96,7 @@ async def start_google_oauth(mobile: bool = True):
         code_challenge_method="S256",
     )
 
-    await _store_pkce(state, code_verifier)
+    await _store_pkce(state, code_verifier, mobile=mobile)
 
     return {"auth_url": auth_url}
 
@@ -123,19 +107,27 @@ async def google_callback(
     state: Annotated[str, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    from urllib.parse import urlencode
+    from fastapi.responses import RedirectResponse
+
     flow = _build_flow()
-    code_verifier = await _pop_pkce(state)
-    if code_verifier is None:
+    pkce_result = await _pop_pkce(state)
+    if pkce_result is None:
         log.warning("google_callback: PKCE verifier not found", state=state)
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "OAuth session expired or server restarted. Please sign in again.",
         )
 
+    code_verifier, is_mobile = pkce_result
+
     try:
         flow.fetch_token(code=code, code_verifier=code_verifier)
     except Exception as exc:
         log.error("google_callback: token exchange failed", error=str(exc))
+        if is_mobile:
+            params = urlencode({"error": f"Sign-in failed: {exc}"})
+            return RedirectResponse(url=f"osmo://auth/callback?{params}")
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"Google token exchange failed: {exc}",
@@ -150,11 +142,17 @@ async def google_callback(
             headers={"Authorization": f"Bearer {credentials.token}"},
         )
         if resp.status_code != 200:
+            if is_mobile:
+                params = urlencode({"error": "Failed to fetch user info from Google."})
+                return RedirectResponse(url=f"osmo://auth/callback?{params}")
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Failed to fetch user info")
         user_info = resp.json()
 
     email = user_info.get("email")
     if not email:
+        if is_mobile:
+            params = urlencode({"error": "No email in Google response."})
+            return RedirectResponse(url=f"osmo://auth/callback?{params}")
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No email in Google response")
 
     result = await db.execute(select(User).where(User.email == email))
@@ -183,78 +181,9 @@ async def google_callback(
     await db.refresh(user)
 
     access_token = create_access_token(str(user.id))
+
+    if is_mobile:
+        params = urlencode({"token": access_token, "email": email})
+        return RedirectResponse(url=f"osmo://auth/callback?{params}")
+
     return {"access_token": access_token, "token_type": "bearer", "email": email}
-
-
-@router.get("/google/callback/mobile")
-async def google_callback_mobile(
-    code: Annotated[str, Query()],
-    state: Annotated[str, Query()],
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    """Mobile OAuth callback — redirects to osmo:// custom URL scheme."""
-    from urllib.parse import urlencode
-    from fastapi.responses import RedirectResponse
-
-    flow = _build_flow()
-    flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
-    code_verifier = await _pop_pkce(state)
-    if code_verifier is None:
-        log.warning("google_callback_mobile: PKCE verifier not found", state=state)
-        params = urlencode({"error": "OAuth session expired. Please try signing in again."})
-        return RedirectResponse(url=f"osmo://auth/callback?{params}")
-
-    try:
-        flow.fetch_token(code=code, code_verifier=code_verifier)
-    except Exception as exc:
-        log.error("google_callback_mobile: token exchange failed", error=str(exc))
-        params = urlencode({"error": f"Sign-in failed: {exc}"})
-        return RedirectResponse(url=f"osmo://auth/callback?{params}")
-    credentials = flow.credentials
-
-    import httpx
-
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {credentials.token}"},
-        )
-        if resp.status_code != 200:
-            params = urlencode({"error": "Failed to fetch user info from Google."})
-            return RedirectResponse(url=f"osmo://auth/callback?{params}")
-        user_info = resp.json()
-
-    email = user_info.get("email")
-    if not email:
-        params = urlencode({"error": "No email in Google response."})
-        return RedirectResponse(url=f"osmo://auth/callback?{params}")
-
-    result = await db.execute(select(User).where(User.email == email))
-    user = result.scalar_one_or_none()
-
-    fernet = get_fernet()
-    tokens_json = json.dumps(
-        {
-            "token": credentials.token,
-            "refresh_token": credentials.refresh_token,
-            "token_uri": credentials.token_uri,
-            "client_id": credentials.client_id,
-            "client_secret": credentials.client_secret,
-            "scopes": list(credentials.scopes or []),
-        }
-    )
-    encrypted_tokens = fernet.encrypt(tokens_json.encode()).decode()
-
-    if user is None:
-        user = User(email=email, google_tokens_encrypted=encrypted_tokens)
-        db.add(user)
-    else:
-        user.google_tokens_encrypted = encrypted_tokens
-
-    await db.commit()
-    await db.refresh(user)
-
-    access_token = create_access_token(str(user.id))
-
-    params = urlencode({"token": access_token, "email": email})
-    return RedirectResponse(url=f"osmo://auth/callback?{params}")

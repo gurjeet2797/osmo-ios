@@ -11,5 +11,8 @@ RUN pip install --no-cache-dir $(python -c "import tomllib; deps=tomllib.load(op
 
 COPY . .
 
+# Ensure the app package is importable (needed for alembic env.py)
+ENV PYTHONPATH=/app
+
 EXPOSE 8000
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

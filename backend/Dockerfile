@@ -1,16 +1,17 @@
-FROM python:3.12-slim AS base
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-FROM base AS deps
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir .
+# Install dependencies only (create minimal package stub so pip resolves)
+RUN mkdir -p app && touch app/__init__.py && \
+    pip install --no-cache-dir . && \
+    rm -rf app
 
-FROM deps AS runtime
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

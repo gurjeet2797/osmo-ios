@@ -9,6 +9,12 @@ from app.config import settings
 from app.models import Base
 
 config = context.config
+
+import sys
+from urllib.parse import urlparse
+parsed = urlparse(settings.database_url)
+print(f"[alembic] database_url scheme={parsed.scheme} host={parsed.hostname} port={parsed.port} dbname={parsed.path}", file=sys.stderr)
+
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:

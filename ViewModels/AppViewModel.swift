@@ -13,6 +13,10 @@ final class AppViewModel {
     var errorMessage: String?
     var pendingConfirmation: PendingConfirmation?
 
+    // UI-presenting device actions
+    var pendingCameraAction: DeviceAction?
+    var pendingMessageAction: DeviceAction?
+
     // Calendar
     var upcomingEvents: [CalendarEvent] = []
     var isLoadingEvents: Bool = false
@@ -23,6 +27,18 @@ final class AppViewModel {
     var liveTranscript: String = ""
     var statusMessage: String?
     private var statusDismissTask: Task<Void, Never>?
+
+    // LLM response shown on HomeView
+    var lastSpokenResponse: String?
+    var displayedResponse: String = ""
+    private var responseDismissTask: Task<Void, Never>?
+    private var typewriterTask: Task<Void, Never>?
+
+    // Tracks whether the user has tapped record this session (for title fade)
+    var hasUsedRecording: Bool = false
+
+    // Silence detection — auto-send after 2s of no new speech
+    private var silenceTimer: Task<Void, Never>?
 
     // Orb state
     var orbPhase: OrbPhase = .idle
@@ -113,6 +129,10 @@ final class AppViewModel {
             currentConversation = Conversation()
         }
 
+        if !hasUsedRecording {
+            hasUsedRecording = true
+        }
+
         orbPhase = .listening
         liveTranscript = ""
 
@@ -124,6 +144,8 @@ final class AppViewModel {
                 if self.orbPhase == .listening && !text.isEmpty {
                     self.orbPhase = .transcribing
                 }
+                // Reset silence timer — auto-send after 2s of no new speech
+                self.resetSilenceTimer()
             }
         }
         speechRecognizer.onError = { [weak self] errorText in
@@ -155,6 +177,8 @@ final class AppViewModel {
 
     func stopRecordingAndSend() {
         guard isRecording else { return }
+        silenceTimer?.cancel()
+        silenceTimer = nil
 
         // Use liveTranscript (already on MainActor) as the authoritative source
         let text = liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -170,6 +194,18 @@ final class AppViewModel {
         inputText = text
         liveTranscript = ""
         sendMessage()
+    }
+
+    private func resetSilenceTimer() {
+        silenceTimer?.cancel()
+        // Only start timer if we have some transcript to send
+        guard !liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        silenceTimer = Task {
+            try? await Task.sleep(for: .seconds(2))
+            if !Task.isCancelled && isRecording {
+                stopRecordingAndSend()
+            }
+        }
     }
 
     // MARK: - Messaging
@@ -263,6 +299,12 @@ final class AppViewModel {
         statusMessage = nil
         liveTranscript = ""
         pendingConfirmation = nil
+        lastSpokenResponse = nil
+        displayedResponse = ""
+        responseDismissTask?.cancel()
+        typewriterTask?.cancel()
+        silenceTimer?.cancel()
+        silenceTimer = nil
         orbPhase = .idle
         speechRecognizer.stopRecording()
     }
@@ -319,6 +361,29 @@ final class AppViewModel {
     private func handleCommandResponse(_ response: CommandResponse) {
         isLoading = false
 
+        // Show response on HomeView with typewriter animation
+        let fullText = response.spokenResponse
+        lastSpokenResponse = fullText
+        displayedResponse = ""
+        typewriterTask?.cancel()
+        responseDismissTask?.cancel()
+
+        typewriterTask = Task {
+            for char in fullText {
+                if Task.isCancelled { return }
+                displayedResponse.append(char)
+                try? await Task.sleep(for: .milliseconds(30))
+            }
+            // After typewriter finishes, auto-dismiss after 8 seconds
+            if !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(8))
+                if !Task.isCancelled {
+                    lastSpokenResponse = nil
+                    displayedResponse = ""
+                }
+            }
+        }
+
         // Build tags from action plan steps
         var tags: [String] = []
         if let plan = response.actionPlan {
@@ -334,7 +399,8 @@ final class AppViewModel {
             tags: tags.isEmpty ? nil : tags,
             planId: response.planId,
             requiresConfirmation: response.requiresConfirmation,
-            deviceActions: response.deviceActions
+            deviceActions: response.deviceActions,
+            attachments: response.attachments
         )
         currentConversation?.messages.append(message)
 
@@ -370,8 +436,47 @@ final class AppViewModel {
             var results: [DeviceActionResult] = []
 
             for action in actions {
-                let result = await EventKitManager.shared.executeAction(action)
+                let result: DeviceActionResult
+                switch action.toolName {
+                case let name where name.hasPrefix("ios_eventkit."):
+                    result = await EventKitManager.shared.executeAction(action)
+                case let name where name.hasPrefix("ios_reminders."):
+                    result = await ReminderManager.shared.executeAction(action)
+                case let name where name.hasPrefix("ios_notifications."):
+                    result = await NotificationManager.shared.executeAction(action)
+                case let name where name.hasPrefix("ios_device."):
+                    result = await DeviceControlManager.shared.executeAction(action)
+                case let name where name.hasPrefix("ios_camera."):
+                    pendingCameraAction = action
+                    result = await CameraManager.shared.executeAction(action)
+                    pendingCameraAction = nil
+                case let name where name.hasPrefix("ios_messages."):
+                    pendingMessageAction = action
+                    result = await MessageManager.shared.executeAction(action)
+                    pendingMessageAction = nil
+                case let name where name.hasPrefix("ios_music."):
+                    result = await MusicManager.shared.executeAction(action)
+                default:
+                    result = DeviceActionResult(
+                        actionId: action.actionId,
+                        idempotencyKey: action.idempotencyKey,
+                        success: false,
+                        result: [:],
+                        error: "Unknown tool: \(action.toolName)"
+                    )
+                }
                 results.append(result)
+            }
+
+            // Surface any device action errors to the user
+            let failures = results.filter { !$0.success }
+            if !failures.isEmpty {
+                let msgs = failures.compactMap(\.error)
+                let joined = msgs.joined(separator: ". ")
+                if !joined.isEmpty {
+                    let errMsg = Message(content: joined, isUser: false, tags: ["device_error"])
+                    currentConversation?.messages.append(errMsg)
+                }
             }
 
             // Report results back to backend

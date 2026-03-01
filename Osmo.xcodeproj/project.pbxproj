@@ -10,6 +10,7 @@
 		083165F95B850576E3BD5AF9 /* ParticleStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3EDFD147322D940BEF91486 /* ParticleStateMachine.swift */; };
 		0D349EB25272DF62E4410B83 /* MotionControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF6F7E08356810FFE2638938 /* MotionControllers.swift */; };
 		10D9F6A190CDA02AFE77A5E2 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = CD7CB94630F7D19BAC92E9EF /* Shaders.metal */; };
+		1F5494E15874183479BDAC8F /* MediaManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86790E23687B289FF4B08F07 /* MediaManager.swift */; };
 		214B60FB3CC2BBAAF96282DA /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773790D4B39DE75EDAB61B66 /* APIClient.swift */; };
 		2A9970D6581EBF59F66DD165 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FAC8F5274C772D98F53DDB1A /* Assets.xcassets */; };
 		2CB724E081F62A2C85F6F46F /* ParticleShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = C804E97990E96D4491EF800B /* ParticleShape.swift */; };
@@ -19,17 +20,24 @@
 		40301D741747D2E76C0CDDF7 /* ControlCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */; };
 		4C88B8E6F1FBEC03575FA67A /* OsmoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E02648469DA9D702A95D2D /* OsmoApp.swift */; };
 		52293C8677AD35BF2D244856 /* GlassEffect+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3623EB850B8F6D6CD4077EA3 /* GlassEffect+Adaptive.swift */; };
+		5351D9269884D06930AA6179 /* MusicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E534BA14971270DC0FDBE08 /* MusicManager.swift */; };
 		55D01A7BEEC5ADF5127A3180 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */; };
+		57CD86BAB80B6F18E05432C6 /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3035168BA6F31D4AE099C2E /* ReminderManager.swift */; };
 		59CE9FAD4410FF460269A498 /* ConfirmationBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */; };
 		5A91AD76795DAC248BF5ACF5 /* ParticleSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D670794EC81E29A26A97F0C7 /* ParticleSystem.swift */; };
 		69A8E9F29DE14BE5FFF41930 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85224002251DA1F00D5733E /* APIModels.swift */; };
 		6BDCA7114081AE577640975F /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C4045A79B132991EB9A915 /* KeychainHelper.swift */; };
+		6E260144D8AC86E30F2A58AB /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EBFF9997DE9F674438F849 /* CameraManager.swift */; };
+		876D1019461605B4BE3E0171 /* AttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F6F514E969611063FF479B /* AttachmentView.swift */; };
 		8827B44A1C89798A2723CE69 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757907DC128FB4316562DA6D /* Message.swift */; };
 		A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A297F421B69C1618A8BEB43E /* ShapeLibrary.swift */; };
 		B0BDB3D03D9569E043945BB0 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31106D9294FE8C82E44CF50 /* APIConfig.swift */; };
 		B14CD232D1F7C3CB2D54BDDF /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */; };
+		B47217E1DCB548838720EE68 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B312AA2D973B69BA1031CA81 /* NotificationManager.swift */; };
 		B6A68D5D1590B3CC04FA9337 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599D3CE1B85FABA8FEE44559 /* AuthManager.swift */; };
+		CC95ECAE3851145DA330787A /* DeviceControlManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */; };
 		D51077A8BA9078D23B48D326 /* MorphController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C135F6E4625A50CB945D14 /* MorphController.swift */; };
+		E36FFB329E00DA1D5356ABA4 /* MessageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFAF6168133B3BFE8355BEDE /* MessageManager.swift */; };
 		F1884971A1FE34381F70751C /* CosmicBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */; };
 		F5E25F483031C95FD47FB523 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5ACBCE687D692885227C20 /* ContentView.swift */; };
 		FC70D79AE8850316106AA4D4 /* EventKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CFD7637A11D1054E56E4C87 /* EventKitManager.swift */; };
@@ -37,20 +45,26 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlManager.swift; sourceTree = "<group>"; };
 		179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlCenterView.swift; sourceTree = "<group>"; };
 		3623EB850B8F6D6CD4077EA3 /* GlassEffect+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GlassEffect+Adaptive.swift"; sourceTree = "<group>"; };
 		4CFD7637A11D1054E56E4C87 /* EventKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitManager.swift; sourceTree = "<group>"; };
+		4E534BA14971270DC0FDBE08 /* MusicManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicManager.swift; sourceTree = "<group>"; };
 		5150CAF43B4DCD152E793821 /* Osmo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Osmo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		599D3CE1B85FABA8FEE44559 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		62EBFF9997DE9F674438F849 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		757907DC128FB4316562DA6D /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		773790D4B39DE75EDAB61B66 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		86790E23687B289FF4B08F07 /* MediaManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaManager.swift; sourceTree = "<group>"; };
 		96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmicBackground.swift; sourceTree = "<group>"; };
 		9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationBannerView.swift; sourceTree = "<group>"; };
 		A297F421B69C1618A8BEB43E /* ShapeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeLibrary.swift; sourceTree = "<group>"; };
+		A3035168BA6F31D4AE099C2E /* ReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderManager.swift; sourceTree = "<group>"; };
 		A3E02648469DA9D702A95D2D /* OsmoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OsmoApp.swift; sourceTree = "<group>"; };
 		AA06BD67A956492DFBC11DF6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		AF6F7E08356810FFE2638938 /* MotionControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionControllers.swift; sourceTree = "<group>"; };
 		B31106D9294FE8C82E44CF50 /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
+		B312AA2D973B69BA1031CA81 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		BCE69FAFA54B83AFA3940D46 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
 		BD5ACBCE687D692885227C20 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C2C4045A79B132991EB9A915 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
@@ -63,8 +77,10 @@
 		F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySheetView.swift; sourceTree = "<group>"; };
 		F3C135F6E4625A50CB945D14 /* MorphController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorphController.swift; sourceTree = "<group>"; };
 		F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSheetView.swift; sourceTree = "<group>"; };
+		F5F6F514E969611063FF479B /* AttachmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentView.swift; sourceTree = "<group>"; };
 		F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
 		FAC8F5274C772D98F53DDB1A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FFAF6168133B3BFE8355BEDE /* MessageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -85,6 +101,7 @@
 		4FF07C7FC7FDA716585D57E7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				F5F6F514E969611063FF479B /* AttachmentView.swift */,
 				F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */,
 				9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */,
 				179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */,
@@ -125,8 +142,15 @@
 				773790D4B39DE75EDAB61B66 /* APIClient.swift */,
 				B31106D9294FE8C82E44CF50 /* APIConfig.swift */,
 				599D3CE1B85FABA8FEE44559 /* AuthManager.swift */,
+				62EBFF9997DE9F674438F849 /* CameraManager.swift */,
+				16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */,
 				4CFD7637A11D1054E56E4C87 /* EventKitManager.swift */,
 				C2C4045A79B132991EB9A915 /* KeychainHelper.swift */,
+				86790E23687B289FF4B08F07 /* MediaManager.swift */,
+				FFAF6168133B3BFE8355BEDE /* MessageManager.swift */,
+				4E534BA14971270DC0FDBE08 /* MusicManager.swift */,
+				B312AA2D973B69BA1031CA81 /* NotificationManager.swift */,
+				A3035168BA6F31D4AE099C2E /* ReminderManager.swift */,
 				F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */,
 			);
 			path = Services;
@@ -233,25 +257,33 @@
 				B0BDB3D03D9569E043945BB0 /* APIConfig.swift in Sources */,
 				69A8E9F29DE14BE5FFF41930 /* APIModels.swift in Sources */,
 				3FE2197DAE4F45391C055523 /* AppViewModel.swift in Sources */,
+				876D1019461605B4BE3E0171 /* AttachmentView.swift in Sources */,
 				B6A68D5D1590B3CC04FA9337 /* AuthManager.swift in Sources */,
+				6E260144D8AC86E30F2A58AB /* CameraManager.swift in Sources */,
 				B14CD232D1F7C3CB2D54BDDF /* ChatSheetView.swift in Sources */,
 				59CE9FAD4410FF460269A498 /* ConfirmationBannerView.swift in Sources */,
 				F5E25F483031C95FD47FB523 /* ContentView.swift in Sources */,
 				40301D741747D2E76C0CDDF7 /* ControlCenterView.swift in Sources */,
 				F1884971A1FE34381F70751C /* CosmicBackground.swift in Sources */,
+				CC95ECAE3851145DA330787A /* DeviceControlManager.swift in Sources */,
 				FC70D79AE8850316106AA4D4 /* EventKitManager.swift in Sources */,
 				52293C8677AD35BF2D244856 /* GlassEffect+Adaptive.swift in Sources */,
 				361587FF73FCF09C5A50CD3B /* HistorySheetView.swift in Sources */,
 				3254A486659C2B2C40ECD12C /* HomeView.swift in Sources */,
 				6BDCA7114081AE577640975F /* KeychainHelper.swift in Sources */,
+				1F5494E15874183479BDAC8F /* MediaManager.swift in Sources */,
 				8827B44A1C89798A2723CE69 /* Message.swift in Sources */,
+				E36FFB329E00DA1D5356ABA4 /* MessageManager.swift in Sources */,
 				D51077A8BA9078D23B48D326 /* MorphController.swift in Sources */,
 				0D349EB25272DF62E4410B83 /* MotionControllers.swift in Sources */,
+				5351D9269884D06930AA6179 /* MusicManager.swift in Sources */,
+				B47217E1DCB548838720EE68 /* NotificationManager.swift in Sources */,
 				4C88B8E6F1FBEC03575FA67A /* OsmoApp.swift in Sources */,
 				FEC5E754E993226609DCCD22 /* ParticleOrbView.swift in Sources */,
 				2CB724E081F62A2C85F6F46F /* ParticleShape.swift in Sources */,
 				083165F95B850576E3BD5AF9 /* ParticleStateMachine.swift in Sources */,
 				5A91AD76795DAC248BF5ACF5 /* ParticleSystem.swift in Sources */,
+				57CD86BAB80B6F18E05432C6 /* ReminderManager.swift in Sources */,
 				10D9F6A190CDA02AFE77A5E2 /* Shaders.metal in Sources */,
 				A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */,
 				55D01A7BEEC5ADF5127A3180 /* SpeechRecognizer.swift in Sources */,
@@ -272,9 +304,13 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Osmo controls music playback through Apple Music.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Osmo needs full calendar access to create, update, and delete events on your behalf.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Osmo needs calendar access to manage your events locally.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Osmo uses the camera to take photos and record video on your behalf.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is needed to record your voice for speech-to-text.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Osmo saves captured photos and videos to your photo library.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Osmo needs reminders access to create, complete, and manage your reminders.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition is used to transcribe your voice commands.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -429,9 +465,13 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Osmo controls music playback through Apple Music.";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Osmo needs full calendar access to create, update, and delete events on your behalf.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Osmo needs calendar access to manage your events locally.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Osmo uses the camera to take photos and record video on your behalf.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is needed to record your voice for speech-to-text.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Osmo saves captured photos and videos to your photo library.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Osmo needs reminders access to create, complete, and manage your reminders.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition is used to transcribe your voice commands.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

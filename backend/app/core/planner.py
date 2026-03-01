@@ -1,208 +1,118 @@
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
+from typing import Any
+from zoneinfo import ZoneInfo
 
-import structlog
-from pydantic import ValidationError
+from app.config import settings
+from app.tools.registry import all_tools, llm_tool_specs
 
-from app.connectors.llm import LLMClient
-from app.schemas.action_plan import ActionPlan
-from app.tools.registry import llm_tool_specs
+SYSTEM_PROMPT = """\
+You are Osmo — a quiet, capable intelligence that lives on the user's device. \
+You speak with warmth but economy. No filler phrases. \
+Never say "Sure!", "I'd be happy to help!", "Of course!", or "Great question!". \
+Just speak plainly. Keep responses brief and informal — not dry, just minimal.
 
-log = structlog.get_logger()
+You control the user's device. You can manage calendars, reminders, notifications, \
+music playback, camera, messages, clipboard, screen brightness, and flashlight. \
+You can also search and read the user's Gmail inbox, and fetch email attachments. \
+Use the tools provided whenever the user asks for something you can do. \
+When they ask for something outside your abilities, be honest: \
+"Can't do that one yet." Keep it brief and warm, not apologetic.
 
-SYSTEM_PROMPT_TEMPLATE = """\
-You are the planning engine for Osmo, a voice-driven calendar assistant.
+For casual conversation — greetings, thanks, how-are-you — respond naturally in \
+one short sentence. You have personality but you don't perform it.
 
-Your job: given a user's spoken command, produce a structured ActionPlan JSON that \
-describes exactly what tool calls to make.
+Always use proper punctuation and capitalization. Write like a literate human, \
+not a chatbot.
 
 ## Current context
-- Current date/time: {now}
-- User timezone: {timezone}
+- Current local date/time for the user: {now} ({timezone})
 - User locale: {locale}
 - Linked providers: {providers}
 
-## Available tools
-{tool_specs}
+The date/time above is already in the user's local timezone. Use it directly — \
+do not convert or offset it.
 
-## Output format
-Return a JSON object with this exact structure:
-{{
-  "user_intent": "<short summary of what the user wants>",
-  "steps": [
-    {{
-      "tool_name": "<one of the tool names above>",
-      "args": {{ ... tool-specific arguments ... }},
-      "risk_level": "low" | "medium" | "high",
-      "requires_confirmation": true | false,
-      "confirmation_phrase": "<what to say to the user for confirmation, or null>",
-      "execution_target": "server" | "device"
-    }}
-  ]
-}}
-
-## Rules
-1. Use iso-8601 datetime strings for all dates/times. Interpret relative dates \
-(\"tomorrow\", \"next Tuesday\") relative to the current date/time above.
-2. For Google Calendar tools, set execution_target to "server".
-3. For iOS EventKit tools, set execution_target to "device".
-4. Set requires_confirmation=true for: deletes, cancellations, inviting attendees, \
-or any action that sends notifications to others.
-5. Set risk_level="high" for deletes/cancellations, "medium" for updates or attendee \
-actions, "low" for reads and simple creates.
-6. If the command is ambiguous or missing critical info (no date, no title), return:
-   {{"user_intent": "<what you understood>", "clarification_needed": "<question>", "steps": []}}
-7. If the user wants to see their schedule, use list_events.
-8. If the user wants to find free time, use freebusy.
-9. Prefer the user's linked providers. If they have both google_calendar and \
-ios_eventkit, prefer google_calendar unless they explicitly mention Apple Calendar.
-10. Do NOT invent event IDs. For update/delete operations on events the user \
-references by name/time, first add a list_events step to find the event, then \
-reference its ID in subsequent steps.
-
-## Few-shot examples
-
-User: "What's on my calendar tomorrow?"
-{{
-  "user_intent": "List tomorrow's events",
-  "steps": [
-    {{
-      "tool_name": "google_calendar.list_events",
-      "args": {{
-        "time_min": "{tomorrow_start}",
-        "time_max": "{tomorrow_end}"
-      }},
-      "risk_level": "low",
-      "requires_confirmation": false,
-      "confirmation_phrase": null,
-      "execution_target": "server"
-    }}
-  ]
-}}
-
-User: "Schedule a meeting with John next Tuesday at 2pm for 1 hour"
-{{
-  "user_intent": "Create a 1-hour meeting with John next Tuesday at 2pm",
-  "steps": [
-    {{
-      "tool_name": "google_calendar.create_event",
-      "args": {{
-        "title": "Meeting with John",
-        "start": "{next_tuesday_2pm}",
-        "end": "{next_tuesday_3pm}",
-        "attendees": ["john"]
-      }},
-      "risk_level": "medium",
-      "requires_confirmation": true,
-      "confirmation_phrase": "I'll create a 1-hour meeting with John next Tuesday 2-3pm. Confirm?",
-      "execution_target": "server"
-    }}
-  ]
-}}
-
-User: "Cancel my dentist appointment"
-{{
-  "user_intent": "Delete the dentist appointment",
-  "steps": [
-    {{
-      "tool_name": "google_calendar.list_events",
-      "args": {{
-        "time_min": "{now_iso}",
-        "time_max": "{two_weeks_out}",
-        "query": "dentist"
-      }},
-      "risk_level": "low",
-      "requires_confirmation": false,
-      "confirmation_phrase": null,
-      "execution_target": "server"
-    }}
-  ],
-  "pending_delete": true
-}}
+## Rules for tool use
+1. Use ISO-8601 datetime strings. Interpret relative dates ("tomorrow", \
+"next Tuesday") relative to the current date/time above.
+2. For Google Calendar tools, execution_target is "server".
+3. For iOS tools (ios_eventkit, ios_reminders, ios_notifications, ios_camera, \
+ios_messages, ios_music, ios_device), execution_target is "device".
+4. Do NOT invent event or reminder IDs. For update/delete, first call the \
+appropriate list tool to find the item.
+5. Prefer the user's linked providers for calendar. If they have both, prefer \
+google_calendar unless they mention Apple Calendar.
+6. For music, search and play directly — no need to confirm the exact song first.
+7. For camera, just open it — the user will capture when ready.
+8. For messages, pre-fill the recipient and body — the user taps Send.
+9. For email questions, search first with google_gmail.search_emails, then read \
+the specific email with google_gmail.read_email to answer the question.
+10. For email attachments, chain: search_emails → list_attachments → get_attachment. \
+The get_attachment tool returns a temporary download URL.
 """
 
 
-def _build_system_prompt(tz: str, locale: str, providers: list[str]) -> str:
-    now = datetime.now(UTC)
-    specs = json.dumps(llm_tool_specs(), indent=2)
-
-    from datetime import timedelta
-
-    tomorrow_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow_end = tomorrow_start + timedelta(days=1)
-
-    days_until_tuesday = (1 - now.weekday()) % 7 or 7
-    next_tuesday = now + timedelta(days=days_until_tuesday)
-    next_tuesday_2pm = next_tuesday.replace(hour=14, minute=0, second=0, microsecond=0)
-    next_tuesday_3pm = next_tuesday_2pm + timedelta(hours=1)
-
-    return SYSTEM_PROMPT_TEMPLATE.format(
-        now=now.isoformat(),
+def build_system_prompt(
+    tz: str = "UTC",
+    locale: str = "en-US",
+    providers: list[str] | None = None,
+) -> str:
+    try:
+        user_tz = ZoneInfo(tz)
+    except (KeyError, ValueError):
+        user_tz = ZoneInfo("UTC")
+    local_now = datetime.now(user_tz)
+    return SYSTEM_PROMPT.format(
+        now=local_now.strftime("%A, %B %d, %Y at %I:%M %p"),
         timezone=tz,
         locale=locale,
-        providers=", ".join(providers),
-        tool_specs=specs,
-        tomorrow_start=tomorrow_start.isoformat(),
-        tomorrow_end=tomorrow_end.isoformat(),
-        next_tuesday_2pm=next_tuesday_2pm.isoformat(),
-        next_tuesday_3pm=next_tuesday_3pm.isoformat(),
-        now_iso=now.isoformat(),
-        two_weeks_out=(now + timedelta(weeks=2)).isoformat(),
+        providers=", ".join(providers or ["google_calendar"]),
     )
 
 
-class Planner:
-    def __init__(self, llm: LLMClient):
-        self._llm = llm
+def _to_api_name(name: str) -> str:
+    """Convert 'google_calendar.list_events' → 'google_calendar-list_events'.
 
-    async def plan(
-        self,
-        transcript: str,
-        timezone: str = "UTC",
-        locale: str = "en-US",
-        linked_providers: list[str] | None = None,
-    ) -> ActionPlan | dict:
-        """Produce an ActionPlan from a user transcript.
+    Both OpenAI and Anthropic function names must match ^[a-zA-Z0-9_-]+$ (no dots).
+    """
+    return name.replace(".", "-")
 
-        Returns an ActionPlan on success, or a dict with clarification_needed on ambiguity.
-        """
-        providers = linked_providers or ["google_calendar"]
-        system_prompt = _build_system_prompt(timezone, locale, providers)
-        specs = llm_tool_specs()
 
-        raw = await self._llm.plan(system_prompt, transcript, specs)
+def _from_api_name(name: str) -> str:
+    """Reverse of _to_api_name."""
+    return name.replace("-", ".", 1)
 
-        if raw.get("clarification_needed"):
-            log.info("planner.clarification_needed", question=raw["clarification_needed"])
-            return raw
 
-        try:
-            plan = ActionPlan(
-                user_intent=raw.get("user_intent", transcript),
-                timezone=timezone,
-                locale=locale,
-                steps=raw.get("steps", []),
-            )
-        except ValidationError as exc:
-            log.warning("planner.validation_failed", error=str(exc))
-            raw_retry = await self._llm.plan_with_retry(
-                system_prompt, transcript, specs, validation_error=str(exc)
-            )
-            if raw_retry.get("clarification_needed"):
-                return raw_retry
-            plan = ActionPlan(
-                user_intent=raw_retry.get("user_intent", transcript),
-                timezone=timezone,
-                locale=locale,
-                steps=raw_retry.get("steps", []),
-            )
-
-        log.info(
-            "planner.plan_created",
-            plan_id=plan.plan_id,
-            steps=len(plan.steps),
-            intent=plan.user_intent,
+def build_openai_tools() -> list[dict[str, Any]]:
+    """Convert internal tool specs into OpenAI function-calling format."""
+    tools = []
+    for spec in llm_tool_specs():
+        tools.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": _to_api_name(spec["name"]),
+                    "description": spec["description"],
+                    "parameters": spec["parameters"],
+                },
+            }
         )
-        return plan
+    return tools
+
+
+def build_anthropic_tools() -> list[dict[str, Any]]:
+    """Convert internal tool specs into Anthropic tool-use format."""
+    tools = []
+    for tool in all_tools():
+        api_name = _to_api_name(tool.name)
+        tools.append(tool.to_anthropic_spec(name_override=api_name))
+    return tools
+
+
+def build_tools() -> list[dict[str, Any]]:
+    """Build tools in the format required by the configured LLM provider."""
+    if settings.llm_provider == "anthropic":
+        return build_anthropic_tools()
+    return build_openai_tools()

@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, calendar, command, health
+from app.api import attachments, auth, calendar, command, health
 from app.config import settings
 from app.db.session import engine
 
@@ -48,3 +48,4 @@ app.include_router(health.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(command.router, prefix="/command", tags=["command"])
 app.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
+app.include_router(attachments.router, prefix="/attachments", tags=["attachments"])

@@ -15,6 +15,17 @@ struct ContentView: View {
             .sheet(isPresented: $viewModel.showControlCenter) {
                 ControlCenterView(viewModel: viewModel)
             }
+            .fullScreenCover(item: $viewModel.pendingCameraAction) { action in
+                CameraView(action: action) {
+                    viewModel.pendingCameraAction = nil
+                }
+                .ignoresSafeArea()
+            }
+            .sheet(item: $viewModel.pendingMessageAction) { action in
+                MessageComposeView(action: action) {
+                    viewModel.pendingMessageAction = nil
+                }
+            }
             .preferredColorScheme(.dark)
             .task {
                 authManager.restoreSession()

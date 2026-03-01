@@ -16,6 +16,14 @@ class CommandRequest(BaseModel):
     )
 
 
+class Attachment(BaseModel):
+    id: str
+    filename: str
+    mime_type: str
+    url: str
+    size: int
+
+
 class CommandResponse(BaseModel):
     spoken_response: str
     action_plan: ActionPlan | None = None
@@ -23,6 +31,7 @@ class CommandResponse(BaseModel):
     requires_confirmation: bool = False
     confirmation_prompt: str | None = None
     plan_id: str | None = None
+    attachments: list[Attachment] = Field(default_factory=list)
 
 
 class ConfirmRequest(BaseModel):

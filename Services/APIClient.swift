@@ -53,7 +53,7 @@ final class APIClient: Sendable {
             transcript: transcript,
             timezone: timezone ?? TimeZone.current.identifier,
             locale: locale ?? Locale.current.identifier,
-            linkedProviders: ["google_calendar"]
+            linkedProviders: ["google_calendar", "google_gmail"]
         )
         return try await post(path: "/command", body: request)
     }

@@ -12,6 +12,7 @@ dependencies = [
     "alembic",
     "redis",
     "openai",
+    "anthropic>=0.45.0",
     "google-api-python-client",
     "google-auth-oauthlib",
     "google-auth-httplib2",

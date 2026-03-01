@@ -40,6 +40,8 @@ targets:
         group: Views
       - path: Views/ControlCenterView.swift
         group: Views
+      - path: Views/AttachmentView.swift
+        group: Views
       # ViewModels
       - path: ViewModels/AppViewModel.swift
         group: ViewModels
@@ -74,6 +76,20 @@ targets:
         group: Services
       - path: Services/SpeechRecognizer.swift
         group: Services
+      - path: Services/ReminderManager.swift
+        group: Services
+      - path: Services/NotificationManager.swift
+        group: Services
+      - path: Services/DeviceControlManager.swift
+        group: Services
+      - path: Services/CameraManager.swift
+        group: Services
+      - path: Services/MessageManager.swift
+        group: Services
+      - path: Services/MusicManager.swift
+        group: Services
+      - path: Services/MediaManager.swift
+        group: Services
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourcompany.Osmo
@@ -97,3 +113,7 @@ targets:
         INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription: "Osmo needs full calendar access to create, update, and delete events on your behalf."
         INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Speech recognition is used to transcribe your voice commands."
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Microphone access is needed to record your voice for speech-to-text."
+        INFOPLIST_KEY_NSRemindersFullAccessUsageDescription: "Osmo needs reminders access to create, complete, and manage your reminders."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Osmo uses the camera to take photos and record video on your behalf."
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Osmo saves captured photos and videos to your photo library."
+        INFOPLIST_KEY_NSAppleMusicUsageDescription: "Osmo controls music playback through Apple Music."

@@ -7,8 +7,16 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://osmo:osmo_dev@localhost:5432/osmo"
     redis_url: str = "redis://localhost:6379/0"
 
+    llm_provider: str = "openai"  # "openai" or "anthropic"
+
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
+
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-5-20250929"
+    anthropic_max_tokens: int = 4096
+
+    session_max_messages: int = 50
 
     google_client_id: str = ""
     google_client_secret: str = ""

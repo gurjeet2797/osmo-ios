@@ -24,6 +24,7 @@ class ActionStep(BaseModel):
     confirmation_phrase: str | None = None
     idempotency_key: str = Field(default_factory=lambda: uuid.uuid4().hex)
     execution_target: Literal["server", "device"] = "server"
+    tool_call_id: str | None = None
 
 
 class ActionPlan(BaseModel):

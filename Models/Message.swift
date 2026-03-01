@@ -10,6 +10,7 @@ struct Message: Identifiable, Sendable {
     var planId: String?
     var requiresConfirmation: Bool
     var deviceActions: [DeviceAction]
+    var attachments: [Attachment]
 
     init(
         id: UUID = UUID(),
@@ -20,7 +21,8 @@ struct Message: Identifiable, Sendable {
         tags: [String]? = nil,
         planId: String? = nil,
         requiresConfirmation: Bool = false,
-        deviceActions: [DeviceAction] = []
+        deviceActions: [DeviceAction] = [],
+        attachments: [Attachment] = []
     ) {
         self.id = id
         self.content = content
@@ -31,6 +33,7 @@ struct Message: Identifiable, Sendable {
         self.planId = planId
         self.requiresConfirmation = requiresConfirmation
         self.deviceActions = deviceActions
+        self.attachments = attachments
     }
 }
 

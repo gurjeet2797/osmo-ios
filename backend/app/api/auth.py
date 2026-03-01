@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import base64
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -15,10 +18,14 @@ from app.models.user import User
 
 router = APIRouter()
 
+# In-memory PKCE verifier store keyed by OAuth state parameter
+_pkce_store: dict[str, str] = {}
+
 GOOGLE_SCOPES = [
     "openid",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/gmail.readonly",
 ]
 
 
@@ -37,26 +44,44 @@ def _build_flow() -> Flow:
     return flow
 
 
+def _generate_pkce() -> tuple[str, str]:
+    """Generate PKCE code_verifier and code_challenge."""
+    code_verifier = base64.urlsafe_b64encode(os.urandom(40)).rstrip(b"=").decode()
+    digest = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return code_verifier, code_challenge
+
+
 @router.post("/google")
 async def start_google_oauth(mobile: bool = True):
     flow = _build_flow()
     if mobile:
         flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
-    auth_url, _ = flow.authorization_url(
+
+    code_verifier, code_challenge = _generate_pkce()
+
+    auth_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
+        code_challenge=code_challenge,
+        code_challenge_method="S256",
     )
+
+    _pkce_store[state] = code_verifier
+
     return {"auth_url": auth_url}
 
 
 @router.get("/google/callback")
 async def google_callback(
     code: Annotated[str, Query()],
+    state: Annotated[str, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     flow = _build_flow()
-    flow.fetch_token(code=code)
+    code_verifier = _pkce_store.pop(state, None)
+    flow.fetch_token(code=code, code_verifier=code_verifier)
     credentials = flow.credentials
 
     import httpx
@@ -106,12 +131,14 @@ async def google_callback(
 @router.get("/google/callback/mobile")
 async def google_callback_mobile(
     code: Annotated[str, Query()],
+    state: Annotated[str, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Mobile OAuth callback — redirects to osmo:// custom URL scheme."""
     flow = _build_flow()
     flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
-    flow.fetch_token(code=code)
+    code_verifier = _pkce_store.pop(state, None)
+    flow.fetch_token(code=code, code_verifier=code_verifier)
     credentials = flow.credentials
 
     import httpx

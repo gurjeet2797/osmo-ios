@@ -14,6 +14,31 @@ struct CommandRequest: Codable, Sendable {
     }
 }
 
+struct Attachment: Codable, Sendable, Identifiable {
+    let id: String
+    let filename: String
+    let mimeType: String
+    let url: String
+    let size: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id, filename, url, size
+        case mimeType = "mime_type"
+    }
+
+    var isImage: Bool {
+        mimeType.hasPrefix("image/")
+    }
+
+    var isPDF: Bool {
+        mimeType == "application/pdf"
+    }
+
+    var isVideo: Bool {
+        mimeType.hasPrefix("video/")
+    }
+}
+
 struct CommandResponse: Codable, Sendable {
     let spokenResponse: String
     let actionPlan: ActionPlan?
@@ -21,6 +46,7 @@ struct CommandResponse: Codable, Sendable {
     let requiresConfirmation: Bool
     let confirmationPrompt: String?
     let planId: String?
+    let attachments: [Attachment]
 
     enum CodingKeys: String, CodingKey {
         case spokenResponse = "spoken_response"
@@ -29,6 +55,18 @@ struct CommandResponse: Codable, Sendable {
         case requiresConfirmation = "requires_confirmation"
         case confirmationPrompt = "confirmation_prompt"
         case planId = "plan_id"
+        case attachments
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        spokenResponse = try container.decode(String.self, forKey: .spokenResponse)
+        actionPlan = try container.decodeIfPresent(ActionPlan.self, forKey: .actionPlan)
+        deviceActions = try container.decodeIfPresent([DeviceAction].self, forKey: .deviceActions) ?? []
+        requiresConfirmation = try container.decodeIfPresent(Bool.self, forKey: .requiresConfirmation) ?? false
+        confirmationPrompt = try container.decodeIfPresent(String.self, forKey: .confirmationPrompt)
+        planId = try container.decodeIfPresent(String.self, forKey: .planId)
+        attachments = try container.decodeIfPresent([Attachment].self, forKey: .attachments) ?? []
     }
 }
 
@@ -66,7 +104,8 @@ struct ActionStep: Codable, Sendable {
 
 // MARK: - Device Actions
 
-struct DeviceAction: Codable, Sendable {
+struct DeviceAction: Codable, Sendable, Identifiable {
+    var id: String { actionId }
     let actionId: String
     let toolName: String
     let args: [String: AnyCodable]
@@ -228,6 +267,22 @@ enum AnyCodable: Codable, Sendable {
 
     var stringValue: String? {
         if case .string(let v) = self { return v }
+        return nil
+    }
+
+    var boolValue: Bool? {
+        if case .bool(let v) = self { return v }
+        return nil
+    }
+
+    var intValue: Int? {
+        if case .int(let v) = self { return v }
+        return nil
+    }
+
+    var doubleValue: Double? {
+        if case .double(let v) = self { return v }
+        if case .int(let v) = self { return Double(v) }
         return nil
     }
 }

@@ -30,6 +30,14 @@ class BaseTool(ABC):
             "parameters": self.parameters_schema(),
         }
 
+    def to_anthropic_spec(self, name_override: str | None = None) -> dict[str, Any]:
+        """Return the tool specification for the Anthropic tool-use interface."""
+        return {
+            "name": name_override or self.name,
+            "description": self.description,
+            "input_schema": self.parameters_schema(),
+        }
+
     @abstractmethod
     def parameters_schema(self) -> dict[str, Any]:
         """JSON Schema for the tool's arguments."""

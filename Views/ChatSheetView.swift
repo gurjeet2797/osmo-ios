@@ -275,11 +275,17 @@ struct MessageBubble: View {
             HStack {
                 if message.isUser { Spacer(minLength: 60) }
 
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(message.content)
                         .font(.system(size: 15, weight: .regular))
                         .foregroundStyle(.white.opacity(message.isUser ? 0.9 : 0.8))
                         .lineSpacing(3)
+
+                    if !message.attachments.isEmpty {
+                        ForEach(message.attachments) { attachment in
+                            AttachmentView(attachment: attachment)
+                        }
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)

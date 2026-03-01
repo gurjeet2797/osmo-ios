@@ -10,11 +10,6 @@ from app.models import Base
 
 config = context.config
 
-import os, sys
-raw_db_url = os.environ.get("DATABASE_URL", "<NOT SET>")
-print(f"[alembic] raw DATABASE_URL length={len(raw_db_url)} first_30={raw_db_url[:30]!r}", file=sys.stderr)
-print(f"[alembic] settings.database_url length={len(settings.database_url)} first_30={settings.database_url[:30]!r}", file=sys.stderr)
-
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:

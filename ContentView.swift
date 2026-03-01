@@ -28,6 +28,7 @@ struct ContentView: View {
             }
             .preferredColorScheme(.dark)
             .task {
+                viewModel.authManager = authManager
                 authManager.restoreSession()
                 viewModel.addGreetingIfNeeded()
             }

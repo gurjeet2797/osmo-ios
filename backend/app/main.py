@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import attachments, auth, calendar, command, health
 from app.config import settings
-from app.db.session import engine
+from app.db.session import engine, redis_pool
 
 structlog.configure(
     processors=[
@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
     log.info("Starting Osmo backend", db_host=db_host, environment=settings.environment)
     yield
     await engine.dispose()
+    await redis_pool.aclose()
 
 
 app = FastAPI(

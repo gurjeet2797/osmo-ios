@@ -1,8 +1,11 @@
+import AVFoundation
+import Speech
 import SwiftUI
 
 struct HomeView: View {
     @Bindable var viewModel: AppViewModel
     @Environment(AuthManager.self) private var authManager
+    @Environment(OnboardingManager.self) private var onboarding
 
     @State private var titleOpacity: Double = 0
     @State private var titleScale: CGFloat = 0.88
@@ -28,109 +31,68 @@ struct HomeView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            CosmicBackground()
+            CosmicBackground(showComet: onboarding.isActive)
 
             VStack(spacing: 0) {
-                // Top bar with auth
-                HStack {
-                    Spacer()
-                    if authManager.isAuthenticated {
-                        Menu {
-                            if let email = authManager.userEmail {
-                                Text(email)
+                // Top bar with auth — hidden during onboarding
+                if !onboarding.isActive {
+                    HStack {
+                        Spacer()
+                        if authManager.isAuthenticated {
+                            Menu {
+                                if let email = authManager.userEmail {
+                                    Text(email)
+                                }
+                                Button("Sign Out", role: .destructive) {
+                                    authManager.signOut()
+                                }
+                            } label: {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.system(size: 22))
+                                    .foregroundStyle(.white.opacity(0.5))
                             }
-                            Button("Sign Out", role: .destructive) {
-                                authManager.signOut()
+                        } else {
+                            Button {
+                                Task { await authManager.signInWithGoogle() }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "person.crop.circle.badge.plus")
+                                        .font(.system(size: 14))
+                                    Text("Sign In")
+                                        .font(.system(size: 13, weight: .medium))
+                                }
+                                .foregroundStyle(.white.opacity(0.6))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(.white.opacity(0.06))
+                                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                                )
                             }
-                        } label: {
-                            Image(systemName: "person.crop.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundStyle(.white.opacity(0.5))
+                            .disabled(authManager.isAuthenticating)
+                            .opacity(authManager.isAuthenticating ? 0.5 : 1)
                         }
-                    } else {
-                        Button {
-                            Task { await authManager.signInWithGoogle() }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "person.crop.circle.badge.plus")
-                                    .font(.system(size: 14))
-                                Text("Sign In")
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundStyle(.white.opacity(0.6))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(.white.opacity(0.06))
-                                    .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                            )
-                        }
-                        .disabled(authManager.isAuthenticating)
-                        .opacity(authManager.isAuthenticating ? 0.5 : 1)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .opacity(bottomBarOpacity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .opacity(bottomBarOpacity)
 
                 Spacer()
 
-                // Personalized greeting — fades away after first recording
-                if !viewModel.hasUsedRecording {
-                    Text(greetingText)
-                        .font(.system(size: 32, weight: .thin))
-                        .tracking(4)
-                        .foregroundStyle(.white.opacity(0.6))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .padding(.horizontal, 32)
-                        .opacity(titleOpacity)
-                        .scaleEffect(titleScale)
-                        .blur(radius: titleBlur)
-                        .transition(.opacity)
-
-                    // Divider line
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.clear, .white.opacity(0.12), .clear],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: lineWidth, height: 0.5)
-                        .padding(.top, 12)
-                        .transition(.opacity)
+                if onboarding.isActive {
+                    // MARK: - Onboarding content
+                    onboardingContent
+                } else {
+                    // MARK: - Normal greeting + tips
+                    normalContent
                 }
-
-                // Subtitle area: LLM response (typewriter) or rotating tips
-                Group {
-                    if viewModel.lastSpokenResponse != nil {
-                        Text(viewModel.displayedResponse)
-                            .font(.system(size: 13, weight: .light))
-                            .foregroundStyle(.white)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(4)
-                            .transition(.opacity)
-                    } else {
-                        Text(tips[tipIndex])
-                            .font(.system(size: 11, weight: .light, design: .monospaced))
-                            .tracking(2)
-                            .foregroundStyle(.white.opacity(0.7))
-                            .opacity(tipOpacity)
-                            .transition(.opacity)
-                    }
-                }
-                .opacity(subtitleOpacity)
-                .padding(.top, viewModel.hasUsedRecording ? 0 : 10)
-                .padding(.horizontal, 32)
-                .frame(minHeight: 20)
-                .animation(.easeInOut(duration: 0.4), value: viewModel.lastSpokenResponse == nil)
 
                 Spacer()
             }
             .animation(.easeInOut(duration: 0.8), value: viewModel.hasUsedRecording)
+            .animation(.easeInOut(duration: 0.5), value: onboarding.isActive)
 
             // Auth error toast
             if let error = authManager.authError {
@@ -151,15 +113,17 @@ struct HomeView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // Orb — pinned to bottom
-            VStack(spacing: 0) {
-                Spacer()
+            // Orb — pinned to bottom (hidden during onboarding until "done" step)
+            if !onboarding.isActive || onboarding.currentStep == .done {
+                VStack(spacing: 0) {
+                    Spacer()
 
-                ParticleOrbView(viewModel: viewModel)
-                    .opacity(bottomBarOpacity)
-                    .padding(.bottom, -20)
+                    ParticleOrbView(viewModel: viewModel)
+                        .opacity(bottomBarOpacity)
+                        .padding(.bottom, -20)
+                }
+                .ignoresSafeArea(edges: .bottom)
             }
-            .ignoresSafeArea(edges: .bottom)
 
             // Live transcript + status — floating above bottom
             VStack(spacing: 2) {
@@ -189,13 +153,19 @@ struct HomeView: View {
         .onAppear {
             runEntrance()
         }
+        .onChange(of: authManager.isAuthenticated) { _, isAuth in
+            // Auto-advance onboarding when sign-in completes
+            if isAuth && onboarding.isActive && onboarding.currentStep == .connect {
+                onboarding.advance()
+            }
+        }
         .task {
             // Wait for entrance animation to finish
             try? await Task.sleep(for: .seconds(3.0))
-            // Rotate tips every 4 seconds (paused while response is showing)
+            // Rotate tips every 4 seconds (paused while response is showing or onboarding)
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(4.0))
-                guard viewModel.lastSpokenResponse == nil else { continue }
+                guard viewModel.lastSpokenResponse == nil, !onboarding.isActive else { continue }
                 withAnimation(.easeOut(duration: 0.5)) {
                     tipOpacity = 0
                 }
@@ -207,6 +177,143 @@ struct HomeView: View {
             }
         }
     }
+
+    // MARK: - Onboarding Content
+
+    @ViewBuilder
+    private var onboardingContent: some View {
+        VStack(spacing: 16) {
+            Text(onboarding.titleText)
+                .font(.system(size: 32, weight: .thin))
+                .tracking(4)
+                .foregroundStyle(.white.opacity(0.6))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.horizontal, 32)
+
+            // Divider line
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.clear, .white.opacity(0.12), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: 60, height: 0.5)
+
+            Text(onboarding.subtitleText)
+                .font(.system(size: 11, weight: .light, design: .monospaced))
+                .tracking(2)
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            if let label = onboarding.buttonLabel {
+                Button {
+                    handleOnboardingAction()
+                } label: {
+                    Text(label)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(.white.opacity(0.06))
+                                .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                        )
+                }
+                .padding(.top, 8)
+            }
+        }
+        .opacity(onboarding.stepOpacity)
+    }
+
+    // MARK: - Normal Content
+
+    @ViewBuilder
+    private var normalContent: some View {
+        // Personalized greeting — fades away after first recording
+        if !viewModel.hasUsedRecording {
+            Text(greetingText)
+                .font(.system(size: 32, weight: .thin))
+                .tracking(4)
+                .foregroundStyle(.white.opacity(0.6))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.horizontal, 32)
+                .opacity(titleOpacity)
+                .scaleEffect(titleScale)
+                .blur(radius: titleBlur)
+                .transition(.opacity)
+
+            // Divider line
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [.clear, .white.opacity(0.12), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: lineWidth, height: 0.5)
+                .padding(.top, 12)
+                .transition(.opacity)
+        }
+
+        // Subtitle area: LLM response (typewriter) or rotating tips
+        Group {
+            if viewModel.lastSpokenResponse != nil {
+                Text(viewModel.displayedResponse)
+                    .font(.system(size: 13, weight: .light))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
+                    .transition(.opacity)
+            } else {
+                Text(tips[tipIndex])
+                    .font(.system(size: 11, weight: .light, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .opacity(tipOpacity)
+                    .transition(.opacity)
+            }
+        }
+        .opacity(subtitleOpacity)
+        .padding(.top, viewModel.hasUsedRecording ? 0 : 10)
+        .padding(.horizontal, 32)
+        .frame(minHeight: 20)
+        .animation(.easeInOut(duration: 0.4), value: viewModel.lastSpokenResponse == nil)
+    }
+
+    // MARK: - Onboarding Actions
+
+    private func handleOnboardingAction() {
+        switch onboarding.currentStep {
+        case .welcome, .voiceFirst:
+            onboarding.advance()
+        case .connect:
+            Task { await authManager.signInWithGoogle() }
+            // Auto-advance handled by onChange(of: authManager.isAuthenticated)
+        case .microphone:
+            Task {
+                SFSpeechRecognizer.requestAuthorization { _ in }
+                AVAudioApplication.requestRecordPermission { _ in
+                    Task { @MainActor in onboarding.advance() }
+                }
+            }
+        case .calendar:
+            Task {
+                _ = await EventKitManager.shared.requestAccess()
+                onboarding.advance()
+            }
+        case .done:
+            break
+        }
+    }
+
+    // MARK: - Helpers
 
     private var greetingText: String {
         if let name = authManager.firstName {

@@ -21,6 +21,9 @@ final class AppViewModel {
     var upcomingEvents: [CalendarEvent] = []
     var isLoadingEvents: Bool = false
 
+    // Auth — set by ContentView on appear
+    weak var authManager: AuthManager?
+
     // Recording
     let speechRecognizer = SpeechRecognizer()
     var isRecording: Bool = false
@@ -125,6 +128,12 @@ final class AppViewModel {
     // MARK: - Recording
 
     func startRecording() {
+        // Gate: require authentication before recording
+        if let auth = authManager, !auth.isAuthenticated {
+            Task { await auth.signInWithGoogle() }
+            return
+        }
+
         if currentConversation == nil {
             currentConversation = Conversation()
         }

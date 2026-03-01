@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db.session import get_db
+from app.db.session import get_db, get_redis
 from app.dependencies import create_access_token, get_fernet
 from app.models.user import User
 
@@ -21,8 +21,23 @@ log = structlog.get_logger()
 
 router = APIRouter()
 
-# In-memory PKCE verifier store keyed by OAuth state parameter
-_pkce_store: dict[str, str] = {}
+_PKCE_PREFIX = "pkce:"
+_PKCE_TTL = 600  # 10 minutes
+
+
+async def _store_pkce(state: str, verifier: str) -> None:
+    r = await get_redis()
+    await r.set(f"{_PKCE_PREFIX}{state}", verifier, ex=_PKCE_TTL)
+
+
+async def _pop_pkce(state: str) -> str | None:
+    r = await get_redis()
+    key = f"{_PKCE_PREFIX}{state}"
+    async with r.pipeline(transaction=True) as pipe:
+        pipe.get(key)
+        pipe.delete(key)
+        result = await pipe.execute()
+    return result[0]  # value or None
 
 GOOGLE_SCOPES = [
     "openid",
@@ -71,7 +86,7 @@ async def start_google_oauth(mobile: bool = True):
         code_challenge_method="S256",
     )
 
-    _pkce_store[state] = code_verifier
+    await _store_pkce(state, code_verifier)
 
     return {"auth_url": auth_url}
 
@@ -83,7 +98,7 @@ async def google_callback(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     flow = _build_flow()
-    code_verifier = _pkce_store.pop(state, None)
+    code_verifier = await _pop_pkce(state)
     if code_verifier is None:
         log.warning("google_callback: PKCE verifier not found", state=state)
         raise HTTPException(
@@ -157,7 +172,7 @@ async def google_callback_mobile(
 
     flow = _build_flow()
     flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
-    code_verifier = _pkce_store.pop(state, None)
+    code_verifier = await _pop_pkce(state)
     if code_verifier is None:
         log.warning("google_callback_mobile: PKCE verifier not found", state=state)
         params = urlencode({"error": "OAuth session expired. Please try signing in again."})

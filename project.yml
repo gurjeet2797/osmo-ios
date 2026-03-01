@@ -90,6 +90,8 @@ targets:
         group: Services
       - path: Services/MediaManager.swift
         group: Services
+      - path: Services/OnboardingManager.swift
+        group: Services
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourcompany.Osmo

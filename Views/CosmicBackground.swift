@@ -14,17 +14,131 @@ struct FloatingStar: Identifiable {
     let revealDelay: Double
 }
 
+struct CometParticle {
+    var position: CGPoint = CGPoint(x: -100, y: -100)
+    var velocity: CGPoint = CGPoint(x: 40, y: 20)
+    var trail: [CGPoint] = []
+    var noiseOffset1: CGFloat = CGFloat.random(in: 0...1000)
+    var noiseOffset2: CGFloat = CGFloat.random(in: 0...1000)
+    var breathPhase: CGFloat = CGFloat.random(in: 0...(.pi * 2))
+    private static let trailLength = 12
+
+    mutating func update(dt: CGFloat, canvasSize: CGSize, time: Double) {
+        // Multi-octave sine noise for organic direction changes
+        let n1 = sin(noiseOffset1 + CGFloat(time) * 0.7) * 0.6
+            + sin(noiseOffset2 + CGFloat(time) * 1.3) * 0.3
+            + sin(noiseOffset1 * 0.5 + CGFloat(time) * 2.1) * 0.1
+        let n2 = cos(noiseOffset2 + CGFloat(time) * 0.5) * 0.6
+            + cos(noiseOffset1 + CGFloat(time) * 1.1) * 0.3
+            + cos(noiseOffset2 * 0.5 + CGFloat(time) * 1.9) * 0.1
+
+        // Breathing speed variation: 20–80 pts/sec
+        let breathSpeed = 50 + 30 * sin(breathPhase + CGFloat(time) * 0.4)
+
+        // Steer velocity toward noise direction
+        let targetVx = n1 * breathSpeed
+        let targetVy = n2 * breathSpeed
+        velocity.x += (targetVx - velocity.x) * dt * 2.0
+        velocity.y += (targetVy - velocity.y) * dt * 2.0
+
+        position.x += velocity.x * dt
+        position.y += velocity.y * dt
+
+        // Screen edge wrapping with margin
+        let margin: CGFloat = 20
+        if position.x < -margin { position.x = canvasSize.width + margin }
+        if position.x > canvasSize.width + margin { position.x = -margin }
+        if position.y < -margin { position.y = canvasSize.height + margin }
+        if position.y > canvasSize.height + margin { position.y = -margin }
+
+        // Update trail
+        trail.append(position)
+        if trail.count > Self.trailLength {
+            trail.removeFirst(trail.count - Self.trailLength)
+        }
+    }
+
+    func draw(context: GraphicsContext) {
+        // Draw trail: decreasing opacity and size
+        for (i, point) in trail.enumerated() {
+            let progress = CGFloat(i) / CGFloat(max(trail.count - 1, 1))
+            let alpha = 0.4 * (1.0 - progress)
+            let radius = 0.5 + 2.5 * (1.0 - progress)
+            let rect = CGRect(
+                x: point.x - radius,
+                y: point.y - radius,
+                width: radius * 2,
+                height: radius * 2
+            )
+            context.fill(
+                Path(ellipseIn: rect),
+                with: .color(.white.opacity(alpha))
+            )
+        }
+
+        // Draw head glow: cyan-tinted
+        let glowRadius: CGFloat = 12
+        let glowRect = CGRect(
+            x: position.x - glowRadius,
+            y: position.y - glowRadius,
+            width: glowRadius * 2,
+            height: glowRadius * 2
+        )
+        context.fill(
+            Path(ellipseIn: glowRect),
+            with: .radialGradient(
+                Gradient(colors: [
+                    Color(hue: 0.52, saturation: 0.4, brightness: 1.0).opacity(0.25),
+                    Color(hue: 0.52, saturation: 0.3, brightness: 1.0).opacity(0.08),
+                    .clear,
+                ]),
+                center: position,
+                startRadius: 0,
+                endRadius: glowRadius
+            )
+        )
+
+        // Draw head core: bright white
+        let coreRadius: CGFloat = 4
+        let coreRect = CGRect(
+            x: position.x - coreRadius,
+            y: position.y - coreRadius,
+            width: coreRadius * 2,
+            height: coreRadius * 2
+        )
+        context.fill(
+            Path(ellipseIn: coreRect),
+            with: .radialGradient(
+                Gradient(colors: [
+                    .white.opacity(0.9),
+                    .white.opacity(0.3),
+                    .clear,
+                ]),
+                center: position,
+                startRadius: 0,
+                endRadius: coreRadius
+            )
+        )
+    }
+}
+
 struct CosmicBackground: View {
+    var showComet: Bool = false
+
     @State private var stars: [FloatingStar] = CosmicBackground.makeStars()
     @State private var touchPoint: CGPoint? = nil
     @State private var touchInfluence: CGFloat = 0
     @State private var startDate = Date()
     @State private var isInteracting: Bool = false
+    @State private var comet = CometParticle()
+    @State private var cometVisible: Bool = false
+    @State private var lastCometTime: Date = .distantPast
+    @State private var previousTimelineDate: Date?
 
     private static let starCount = 120
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: isInteracting ? 1.0 / 60.0 : 1.0 / 30.0)) { timeline in
+        TimelineView(.animation(minimumInterval: isInteracting || cometVisible ? 1.0 / 60.0 : 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let elapsed = timeline.date.timeIntervalSince(startDate)
 
@@ -48,6 +162,13 @@ struct CosmicBackground: View {
                 }
 
                 drawConstellationLines(context: context, positions: positions, time: t, elapsed: elapsed)
+
+                if cometVisible {
+                    comet.draw(context: context)
+                }
+            }
+            .onChange(of: timeline.date) { _, newDate in
+                updateComet(canvasDate: newDate, time: t)
             }
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -226,6 +347,53 @@ struct CosmicBackground: View {
                         lineWidth: 0.3
                     )
                 }
+            }
+        }
+    }
+
+    // MARK: - Comet
+
+    private func updateComet(canvasDate: Date, time: Double) {
+        let prev = previousTimelineDate ?? canvasDate
+        let dt = CGFloat(canvasDate.timeIntervalSince(prev))
+        previousTimelineDate = canvasDate
+
+        guard dt > 0, dt < 0.5 else { return }
+
+        if showComet && !cometVisible {
+            spawnComet(canvasSize: nil, time: time)
+        }
+
+        if !showComet && !cometVisible {
+            // Occasional random bursts during normal use
+            let sinceLastComet = canvasDate.timeIntervalSince(lastCometTime)
+            if sinceLastComet > Double.random(in: 30...60) {
+                spawnComet(canvasSize: nil, time: time)
+            }
+        }
+
+        if cometVisible {
+            // Use a reasonable default canvas size for wrapping
+            let screenBounds = UIScreen.main.bounds
+            comet.update(dt: dt, canvasSize: screenBounds.size, time: time)
+        }
+    }
+
+    private func spawnComet(canvasSize: CGSize?, time: Double) {
+        let bounds = canvasSize ?? UIScreen.main.bounds.size
+        comet = CometParticle()
+        comet.position = CGPoint(
+            x: CGFloat.random(in: 0...bounds.width),
+            y: CGFloat.random(in: 0...bounds.height)
+        )
+        cometVisible = true
+        lastCometTime = Date()
+
+        // Auto-hide after burst duration (10s) if not in persistent showComet mode
+        if !showComet {
+            Task {
+                try? await Task.sleep(for: .seconds(10))
+                cometVisible = false
             }
         }
     }

@@ -76,6 +76,13 @@ async def start_google_oauth(mobile: bool = True):
     if mobile:
         flow.redirect_uri = settings.google_redirect_uri.replace("/callback", "/callback/mobile")
 
+    log.info(
+        "start_google_oauth",
+        redirect_uri=flow.redirect_uri,
+        base_redirect_uri=settings.google_redirect_uri,
+        mobile=mobile,
+    )
+
     code_verifier, code_challenge = _generate_pkce()
 
     auth_url, state = flow.authorization_url(

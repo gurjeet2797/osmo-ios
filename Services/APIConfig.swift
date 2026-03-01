@@ -9,8 +9,7 @@ enum APIEnvironment {
         case .development:
             URL(string: "https://hispid-kenyetta-diphtheritically.ngrok-free.dev")!
         case .production:
-            // TODO: Replace with your Railway URL
-            URL(string: "https://your-app.railway.app")!
+            URL(string: "https://osmo-ios-production.up.railway.app")!
         }
     }
 }

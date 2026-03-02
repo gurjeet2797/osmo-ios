@@ -48,12 +48,14 @@ final class APIClient: Sendable {
 
     // MARK: - Commands
 
-    func sendCommand(transcript: String, timezone: String? = nil, locale: String? = nil) async throws -> CommandResponse {
+    func sendCommand(transcript: String, timezone: String? = nil, locale: String? = nil, latitude: Double? = nil, longitude: Double? = nil) async throws -> CommandResponse {
         let request = CommandRequest(
             transcript: transcript,
             timezone: timezone ?? TimeZone.current.identifier,
             locale: locale ?? Locale.current.identifier,
-            linkedProviders: ["google_calendar", "google_gmail"]
+            linkedProviders: ["google_calendar", "google_gmail"],
+            latitude: latitude,
+            longitude: longitude
         )
         return try await post(path: "/command", body: request)
     }

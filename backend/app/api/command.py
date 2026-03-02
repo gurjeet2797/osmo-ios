@@ -67,7 +67,12 @@ def _extract_attachments(step_results: list) -> list[Attachment]:
     return attachments
 
 
-def _build_context(user: User, db: AsyncSession | None = None) -> ToolContext:
+def _build_context(
+    user: User,
+    db: AsyncSession | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+) -> ToolContext:
     google_creds = None
     if user.google_tokens_encrypted:
         google_creds = credentials_from_encrypted(user.google_tokens_encrypted)
@@ -76,6 +81,8 @@ def _build_context(user: User, db: AsyncSession | None = None) -> ToolContext:
         google_credentials=google_creds,
         timezone=user.timezone,
         db=db,
+        latitude=latitude,
+        longitude=longitude,
     )
 
 
@@ -237,7 +244,10 @@ async def handle_command(
 ):
     llm = create_llm_client()
     providers = body.linked_providers or ["google_calendar"]
-    system_prompt = build_system_prompt(body.timezone, body.locale, providers)
+    system_prompt = build_system_prompt(
+        body.timezone, body.locale, providers,
+        latitude=body.latitude, longitude=body.longitude,
+    )
     tools = build_tools()
     use_anthropic = settings.llm_provider == "anthropic"
 
@@ -311,7 +321,7 @@ async def handle_command(
         )
 
     # 7. Execute
-    context = _build_context(user, db=db)
+    context = _build_context(user, db=db, latitude=body.latitude, longitude=body.longitude)
     executor = Executor()
     exec_result = await executor.execute_plan(plan, context)
 

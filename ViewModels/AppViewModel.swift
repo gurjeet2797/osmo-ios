@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 
 @Observable
 final class AppViewModel {
@@ -16,6 +17,7 @@ final class AppViewModel {
     // UI-presenting device actions
     var pendingCameraAction: DeviceAction?
     var pendingMessageAction: DeviceAction?
+    var pendingTranslationConfig: TranslationSession.Configuration?
 
     // Calendar
     var upcomingEvents: [CalendarEvent] = []
@@ -236,7 +238,11 @@ final class AppViewModel {
         Task {
             do {
                 showStatus("Processing...")
-                let response = try await apiClient.sendCommand(transcript: text)
+                let response = try await apiClient.sendCommand(
+                    transcript: text,
+                    latitude: LocationManager.shared.currentLatitude,
+                    longitude: LocationManager.shared.currentLongitude
+                )
                 showStatus("Executed successfully")
                 dismissStatusAfterDelay()
                 handleCommandResponse(response)
@@ -470,6 +476,19 @@ final class AppViewModel {
                     pendingMessageAction = nil
                 case let name where name.hasPrefix("ios_music."):
                     result = await MusicManager.shared.executeAction(action)
+                case let name where name.hasPrefix("ios_app_launcher."):
+                    result = await AppLauncherManager.shared.executeAction(action)
+                case let name where name.hasPrefix("ios_translation."):
+                    // Trigger SwiftUI .translationTask via config change
+                    if let targetLang = action.args["target_language"]?.stringValue,
+                       let langCode = TranslationManager.languageCodes[targetLang.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)] {
+                        let target = Locale.Language(identifier: langCode)
+                        pendingTranslationConfig = .init(target: target)
+                    }
+                    result = await TranslationManager.shared.executeAction(action)
+                    pendingTranslationConfig = nil
+                case let name where name.hasPrefix("ios_navigation."):
+                    result = await NavigationManager.shared.executeAction(action)
                 default:
                     result = DeviceActionResult(
                         actionId: action.actionId,

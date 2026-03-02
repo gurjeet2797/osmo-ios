@@ -92,6 +92,14 @@ targets:
         group: Services
       - path: Services/OnboardingManager.swift
         group: Services
+      - path: Services/LocationManager.swift
+        group: Services
+      - path: Services/AppLauncherManager.swift
+        group: Services
+      - path: Services/TranslationManager.swift
+        group: Services
+      - path: Services/NavigationManager.swift
+        group: Services
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourcompany.Osmo
@@ -119,3 +127,4 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: "Osmo uses the camera to take photos and record video on your behalf."
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Osmo saves captured photos and videos to your photo library."
         INFOPLIST_KEY_NSAppleMusicUsageDescription: "Osmo controls music playback through Apple Music."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Osmo uses your location for navigation, local search, and commute estimates."

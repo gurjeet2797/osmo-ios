@@ -14,6 +14,8 @@ class CommandRequest(BaseModel):
         default_factory=lambda: ["google_calendar"],
         description="Linked calendar providers, e.g. google_calendar, ios_eventkit",
     )
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class Attachment(BaseModel):

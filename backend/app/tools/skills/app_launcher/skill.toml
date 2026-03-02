@@ -1,0 +1,8 @@
+[skill]
+name = "app_launcher"
+display_name = "App launcher"
+description = "open apps on the user's phone (ios_app_launcher.*)"
+tool_modules = ["ios_app_launcher"]
+planner_instructions = [
+    "Use ios_app_launcher.open_app when the user asks to open a specific app.",
+]

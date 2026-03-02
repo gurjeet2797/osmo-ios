@@ -1,0 +1,9 @@
+[skill]
+name = "web_search"
+display_name = "Web search"
+description = "search the web for current information, news, local businesses, weather (web_search.*)"
+tool_modules = ["brave_search"]
+planner_instructions = [
+    "Use web_search.search for any question requiring current or real-time information.",
+    "Include the user's city or location context in search queries when relevant.",
+]

@@ -31,6 +31,7 @@ Proper punctuation. One sentence max for conversational replies.
 - Date/time: {now} ({timezone}) — already local, do not offset
 - Locale: {locale}
 - Providers: {providers}
+- Location: {location}
 
 ## Tool-use rules
 {tool_rules}
@@ -58,12 +59,20 @@ def build_system_prompt(
     tz: str = "UTC",
     locale: str = "en-US",
     providers: list[str] | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
 ) -> str:
     try:
         user_tz = ZoneInfo(tz)
     except (KeyError, ValueError):
         user_tz = ZoneInfo("UTC")
     local_now = datetime.now(user_tz)
+
+    if latitude is not None and longitude is not None:
+        location_str = f"{latitude:.4f}, {longitude:.4f}"
+    else:
+        location_str = "not available"
+
     return _SYSTEM_PROMPT_TEMPLATE.format(
         tool_categories=_build_tool_categories(),
         tool_rules=_build_tool_rules(),
@@ -71,6 +80,7 @@ def build_system_prompt(
         timezone=tz,
         locale=locale,
         providers=", ".join(providers or ["google_calendar"]),
+        location=location_str,
     )
 
 

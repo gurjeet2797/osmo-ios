@@ -7,9 +7,11 @@ struct CommandRequest: Codable, Sendable {
     let timezone: String
     let locale: String
     let linkedProviders: [String]
+    let latitude: Double?
+    let longitude: Double?
 
     enum CodingKeys: String, CodingKey {
-        case transcript, timezone, locale
+        case transcript, timezone, locale, latitude, longitude
         case linkedProviders = "linked_providers"
     }
 }

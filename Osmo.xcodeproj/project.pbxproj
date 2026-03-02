@@ -15,6 +15,7 @@
 		214B60FB3CC2BBAAF96282DA /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773790D4B39DE75EDAB61B66 /* APIClient.swift */; };
 		2A9970D6581EBF59F66DD165 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FAC8F5274C772D98F53DDB1A /* Assets.xcassets */; };
 		2CB724E081F62A2C85F6F46F /* ParticleShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = C804E97990E96D4491EF800B /* ParticleShape.swift */; };
+		2DB7C77BE85BD16E889CA4CF /* TranslationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13CFAA37F6590C24637D5F91 /* TranslationManager.swift */; };
 		3254A486659C2B2C40ECD12C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BD67A956492DFBC11DF6 /* HomeView.swift */; };
 		361587FF73FCF09C5A50CD3B /* HistorySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */; };
 		3FE2197DAE4F45391C055523 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE69FAFA54B83AFA3940D46 /* AppViewModel.swift */; };
@@ -26,6 +27,7 @@
 		57CD86BAB80B6F18E05432C6 /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3035168BA6F31D4AE099C2E /* ReminderManager.swift */; };
 		59CE9FAD4410FF460269A498 /* ConfirmationBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */; };
 		5A91AD76795DAC248BF5ACF5 /* ParticleSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D670794EC81E29A26A97F0C7 /* ParticleSystem.swift */; };
+		5F60F2823ED0FE37915BF2C5 /* AppLauncherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A345F4A8931DC8F0F314CC /* AppLauncherManager.swift */; };
 		69A8E9F29DE14BE5FFF41930 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85224002251DA1F00D5733E /* APIModels.swift */; };
 		6BDCA7114081AE577640975F /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C4045A79B132991EB9A915 /* KeychainHelper.swift */; };
 		6E260144D8AC86E30F2A58AB /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EBFF9997DE9F674438F849 /* CameraManager.swift */; };
@@ -36,8 +38,10 @@
 		B14CD232D1F7C3CB2D54BDDF /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */; };
 		B47217E1DCB548838720EE68 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B312AA2D973B69BA1031CA81 /* NotificationManager.swift */; };
 		B6A68D5D1590B3CC04FA9337 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599D3CE1B85FABA8FEE44559 /* AuthManager.swift */; };
+		C8D4DDE05C8D37FE1DF57876 /* NavigationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */; };
 		CC95ECAE3851145DA330787A /* DeviceControlManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */; };
 		D51077A8BA9078D23B48D326 /* MorphController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C135F6E4625A50CB945D14 /* MorphController.swift */; };
+		D5E353707086B72764DF78A7 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D9A5DA707B7A77EAFBB23BF /* LocationManager.swift */; };
 		E36FFB329E00DA1D5356ABA4 /* MessageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFAF6168133B3BFE8355BEDE /* MessageManager.swift */; };
 		F1884971A1FE34381F70751C /* CosmicBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */; };
 		F5E25F483031C95FD47FB523 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5ACBCE687D692885227C20 /* ContentView.swift */; };
@@ -46,6 +50,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		04A345F4A8931DC8F0F314CC /* AppLauncherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLauncherManager.swift; sourceTree = "<group>"; };
+		13CFAA37F6590C24637D5F91 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
 		16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlManager.swift; sourceTree = "<group>"; };
 		179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlCenterView.swift; sourceTree = "<group>"; };
 		3623EB850B8F6D6CD4077EA3 /* GlassEffect+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GlassEffect+Adaptive.swift"; sourceTree = "<group>"; };
@@ -55,8 +61,10 @@
 		5150CAF43B4DCD152E793821 /* Osmo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Osmo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		599D3CE1B85FABA8FEE44559 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		62EBFF9997DE9F674438F849 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		6D9A5DA707B7A77EAFBB23BF /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		757907DC128FB4316562DA6D /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		773790D4B39DE75EDAB61B66 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationManager.swift; sourceTree = "<group>"; };
 		86790E23687B289FF4B08F07 /* MediaManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaManager.swift; sourceTree = "<group>"; };
 		96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmicBackground.swift; sourceTree = "<group>"; };
 		9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationBannerView.swift; sourceTree = "<group>"; };
@@ -143,18 +151,22 @@
 			children = (
 				773790D4B39DE75EDAB61B66 /* APIClient.swift */,
 				B31106D9294FE8C82E44CF50 /* APIConfig.swift */,
+				04A345F4A8931DC8F0F314CC /* AppLauncherManager.swift */,
 				599D3CE1B85FABA8FEE44559 /* AuthManager.swift */,
 				62EBFF9997DE9F674438F849 /* CameraManager.swift */,
 				16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */,
 				4CFD7637A11D1054E56E4C87 /* EventKitManager.swift */,
 				C2C4045A79B132991EB9A915 /* KeychainHelper.swift */,
+				6D9A5DA707B7A77EAFBB23BF /* LocationManager.swift */,
 				86790E23687B289FF4B08F07 /* MediaManager.swift */,
 				FFAF6168133B3BFE8355BEDE /* MessageManager.swift */,
 				4E534BA14971270DC0FDBE08 /* MusicManager.swift */,
+				85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */,
 				B312AA2D973B69BA1031CA81 /* NotificationManager.swift */,
 				3C6699AA190E203DB7A4821B /* OnboardingManager.swift */,
 				A3035168BA6F31D4AE099C2E /* ReminderManager.swift */,
 				F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */,
+				13CFAA37F6590C24637D5F91 /* TranslationManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -259,6 +271,7 @@
 				214B60FB3CC2BBAAF96282DA /* APIClient.swift in Sources */,
 				B0BDB3D03D9569E043945BB0 /* APIConfig.swift in Sources */,
 				69A8E9F29DE14BE5FFF41930 /* APIModels.swift in Sources */,
+				5F60F2823ED0FE37915BF2C5 /* AppLauncherManager.swift in Sources */,
 				3FE2197DAE4F45391C055523 /* AppViewModel.swift in Sources */,
 				876D1019461605B4BE3E0171 /* AttachmentView.swift in Sources */,
 				B6A68D5D1590B3CC04FA9337 /* AuthManager.swift in Sources */,
@@ -274,12 +287,14 @@
 				361587FF73FCF09C5A50CD3B /* HistorySheetView.swift in Sources */,
 				3254A486659C2B2C40ECD12C /* HomeView.swift in Sources */,
 				6BDCA7114081AE577640975F /* KeychainHelper.swift in Sources */,
+				D5E353707086B72764DF78A7 /* LocationManager.swift in Sources */,
 				1F5494E15874183479BDAC8F /* MediaManager.swift in Sources */,
 				8827B44A1C89798A2723CE69 /* Message.swift in Sources */,
 				E36FFB329E00DA1D5356ABA4 /* MessageManager.swift in Sources */,
 				D51077A8BA9078D23B48D326 /* MorphController.swift in Sources */,
 				0D349EB25272DF62E4410B83 /* MotionControllers.swift in Sources */,
 				5351D9269884D06930AA6179 /* MusicManager.swift in Sources */,
+				C8D4DDE05C8D37FE1DF57876 /* NavigationManager.swift in Sources */,
 				B47217E1DCB548838720EE68 /* NotificationManager.swift in Sources */,
 				18FE6F353011B91EB336F489 /* OnboardingManager.swift in Sources */,
 				4C88B8E6F1FBEC03575FA67A /* OsmoApp.swift in Sources */,
@@ -291,6 +306,7 @@
 				10D9F6A190CDA02AFE77A5E2 /* Shaders.metal in Sources */,
 				A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */,
 				55D01A7BEEC5ADF5127A3180 /* SpeechRecognizer.swift in Sources */,
+				2DB7C77BE85BD16E889CA4CF /* TranslationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -312,6 +328,7 @@
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Osmo needs full calendar access to create, update, and delete events on your behalf.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Osmo needs calendar access to manage your events locally.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Osmo uses the camera to take photos and record video on your behalf.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Osmo uses your location for navigation, local search, and commute estimates.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is needed to record your voice for speech-to-text.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Osmo saves captured photos and videos to your photo library.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Osmo needs reminders access to create, complete, and manage your reminders.";
@@ -473,6 +490,7 @@
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Osmo needs full calendar access to create, update, and delete events on your behalf.";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Osmo needs calendar access to manage your events locally.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Osmo uses the camera to take photos and record video on your behalf.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Osmo uses your location for navigation, local search, and commute estimates.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is needed to record your voice for speech-to-text.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Osmo saves captured photos and videos to your photo library.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Osmo needs reminders access to create, complete, and manage your reminders.";

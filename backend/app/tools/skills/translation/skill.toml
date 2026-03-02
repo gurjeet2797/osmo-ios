@@ -1,0 +1,8 @@
+[skill]
+name = "translation"
+display_name = "Translation"
+description = "translate text between languages on-device (ios_translation.*)"
+tool_modules = ["ios_translation"]
+planner_instructions = [
+    "Use ios_translation.translate for translation requests. Specify the target language as a language name (e.g. 'Spanish', 'French', 'Japanese').",
+]

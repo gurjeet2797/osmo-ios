@@ -38,6 +38,10 @@ class Settings(BaseSettings):
 
     fernet_key: str = ""
 
+    google_routes_api_key: str = ""
+
+    brave_search_api_key: str = ""
+
     sentry_dsn: str = ""
 
     environment: str = "development"

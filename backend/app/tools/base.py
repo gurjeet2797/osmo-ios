@@ -52,8 +52,12 @@ class ToolContext:
         google_credentials: Any | None = None,
         timezone: str = "UTC",
         db: Any | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
     ):
         self.user_id = user_id
         self.google_credentials = google_credentials
         self.timezone = timezone
         self.db = db
+        self.latitude = latitude
+        self.longitude = longitude

@@ -139,7 +139,13 @@ final class AppViewModel {
                 self.startRecording()
             }
         }
-        wakeWordDetector.setEnabled(isWakeWordEnabled)
+
+        // Request permissions then start listening
+        Task {
+            let authorized = await wakeWordDetector.requestAuthorization()
+            guard authorized, isWakeWordEnabled else { return }
+            wakeWordDetector.setEnabled(true)
+        }
     }
 
     func toggleWakeWord(_ enabled: Bool) {

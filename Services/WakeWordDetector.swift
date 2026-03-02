@@ -31,7 +31,11 @@ nonisolated final class WakeWordDetector: @unchecked Sendable {
     private var isPaused: Bool = false
 
     /// Variants of "Osmo" that the recognizer might produce.
-    private let wakeVariants: [String] = ["osmo", "ozmo", "oz mo", "osmol", "ossmo"]
+    private let wakeVariants: [String] = [
+        "osmo", "ozmo", "oz mo", "osmol", "ossmo",
+        "cosmo", "osma", "asmo", "ozma", "oslo",
+        "awesome", "os mo"
+    ]
 
     init(locale: Locale = Locale(identifier: "en-US")) {
         self.speechRecognizer = SFSpeechRecognizer(locale: locale)
@@ -69,13 +73,47 @@ nonisolated final class WakeWordDetector: @unchecked Sendable {
         }
     }
 
+    // MARK: - Authorization
+
+    /// Request speech and mic permissions. Must be called before startListening will work.
+    func requestAuthorization() async -> Bool {
+        let speechStatus = SFSpeechRecognizer.authorizationStatus()
+
+        if speechStatus == .notDetermined {
+            let granted = await withUnsafeContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { status in
+                    continuation.resume(returning: status == .authorized)
+                }
+            }
+            guard granted else { return false }
+        } else if speechStatus != .authorized {
+            return false
+        }
+
+        let micStatus = AVAudioApplication.shared.recordPermission
+        if micStatus == .undetermined {
+            let granted = await AVAudioApplication.requestRecordPermission()
+            guard granted else { return false }
+        } else if micStatus != .granted {
+            return false
+        }
+
+        return true
+    }
+
     // MARK: - Core Listening
 
     func startListening() {
         guard isEnabled, !isPaused, !isListening else { return }
-        guard let speechRecognizer, speechRecognizer.isAvailable else { return }
+        guard let speechRecognizer, speechRecognizer.isAvailable else {
+            // On-device model may not be ready yet — retry after delay
+            DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                guard let self, self.isEnabled, !self.isPaused, !self.isListening else { return }
+                self.startListening()
+            }
+            return
+        }
 
-        // Authorization must already be granted (checked at app startup via SpeechRecognizer).
         let speechStatus = SFSpeechRecognizer.authorizationStatus()
         let micStatus = AVAudioApplication.shared.recordPermission
         guard speechStatus == .authorized, micStatus == .granted else { return }
@@ -103,13 +141,23 @@ nonisolated final class WakeWordDetector: @unchecked Sendable {
             try engine.start()
 
             let callback = self.onWakeWord
+            var lastCheckedLength = 0
 
             recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
                 guard let self else { return }
 
                 if let result {
-                    let text = result.bestTranscription.formattedString.lowercased()
-                    if self.containsWakeWord(text) {
+                    let fullText = result.bestTranscription.formattedString.lowercased()
+                    // Only check newly added text to avoid re-scanning old words
+                    let newText: String
+                    if fullText.count > lastCheckedLength {
+                        let startIdx = fullText.index(fullText.startIndex, offsetBy: max(0, lastCheckedLength - 10))
+                        newText = String(fullText[startIdx...])
+                        lastCheckedLength = fullText.count
+                    } else {
+                        newText = fullText
+                    }
+                    if self.containsWakeWord(newText) {
                         let now = Date()
                         if now.timeIntervalSince(self.lastDetectionTime) >= self.cooldownInterval {
                             self.lastDetectionTime = now

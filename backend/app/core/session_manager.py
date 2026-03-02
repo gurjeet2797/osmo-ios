@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import structlog
@@ -100,11 +101,13 @@ class SessionManager:
             )
         return False
 
+    # ---- Anthropic format helpers ----
+
     @staticmethod
     def append_user_message(
         messages: list[dict[str, Any]], content: str
     ) -> list[dict[str, Any]]:
-        """Append a plain text user message."""
+        """Append a plain text user message (Anthropic format)."""
         messages.append({"role": "user", "content": content})
         return messages
 
@@ -136,4 +139,58 @@ class SessionManager:
     ) -> list[dict[str, Any]]:
         """Append tool_result blocks as a user message (Anthropic format)."""
         messages.append({"role": "user", "content": results})
+        return messages
+
+    # ---- OpenAI format helpers ----
+
+    @staticmethod
+    def append_openai_user_message(
+        messages: list[dict[str, Any]], content: str
+    ) -> list[dict[str, Any]]:
+        """Append a plain text user message (OpenAI format)."""
+        messages.append({"role": "user", "content": content})
+        return messages
+
+    @staticmethod
+    def append_openai_assistant_response(
+        messages: list[dict[str, Any]], response: Any
+    ) -> list[dict[str, Any]]:
+        """Serialize an OpenAI response message into session format."""
+        msg: dict[str, Any] = {
+            "role": "assistant",
+            "content": response.text,
+        }
+        if response.tool_calls:
+            from app.core.planner import _to_api_name
+            msg["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": _to_api_name(tc.name),
+                        "arguments": json.dumps(tc.arguments),
+                    },
+                }
+                for tc in response.tool_calls
+            ]
+        messages.append(msg)
+        return messages
+
+    @staticmethod
+    def append_openai_tool_results(
+        messages: list[dict[str, Any]],
+        tool_calls: list,
+        step_results: list,
+    ) -> list[dict[str, Any]]:
+        """Append tool result messages (OpenAI format — one per tool call)."""
+        for tc, sr in zip(tool_calls, step_results):
+            if sr.success:
+                content = json.dumps(sr.result) if sr.result else '{"status": "ok"}'
+            else:
+                content = json.dumps({"error": sr.error or "unknown error"})
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": content,
+            })
         return messages

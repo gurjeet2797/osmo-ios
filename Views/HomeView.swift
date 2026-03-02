@@ -141,7 +141,7 @@ struct HomeView: View {
                         .transition(.opacity)
                 }
 
-                if let status = viewModel.statusMessage {
+                if let status = viewModel.statusMessage, viewModel.orbPhase != .sending {
                     Text(status)
                         .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .tracking(1)
@@ -219,21 +219,35 @@ struct HomeView: View {
 
         Spacer()
 
-        // Button between text and orb — easy thumb reach
+        // Button(s) between text and orb — easy thumb reach
         if let label = onboarding.buttonLabel {
-            Button {
-                handleOnboardingAction()
-            } label: {
-                Text(label)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(.white.opacity(0.06))
-                            .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                    )
+            HStack(spacing: 12) {
+                Button {
+                    handleOnboardingAction()
+                } label: {
+                    Text(label)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(.white.opacity(0.06))
+                                .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                        )
+                }
+
+                if let skip = onboarding.skipLabel {
+                    Button {
+                        onboarding.advance()
+                    } label: {
+                        Text(skip)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.35))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                    }
+                }
             }
             .opacity(onboarding.stepOpacity)
             .padding(.bottom, 80)
@@ -282,15 +296,36 @@ struct HomeView: View {
                 .transition(.opacity)
         }
 
-        // Subtitle area: LLM response (typewriter) or rotating tips
+        // Subtitle area: LLM response (typewriter), briefing card, or rotating tips
         Group {
             if viewModel.lastSpokenResponse != nil {
-                Text(viewModel.displayedResponse)
+                Text(MarkdownParser.stripMarkdown(viewModel.displayedResponse))
                     .font(.system(size: 13, weight: .light))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
-                    .lineLimit(4)
+                    .lineLimit(8)
+                    .frame(maxHeight: 160)
                     .transition(.opacity)
+                    .onTapGesture {
+                        viewModel.showChat = true
+                    }
+            } else if let briefing = viewModel.briefingText {
+                Text(briefing)
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.white.opacity(0.04))
+                            .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                    )
+                    .transition(.opacity)
+                    .onTapGesture {
+                        viewModel.showChat = true
+                    }
             } else {
                 Text(tips[tipIndex])
                     .font(.system(size: 11, weight: .light, design: .monospaced))

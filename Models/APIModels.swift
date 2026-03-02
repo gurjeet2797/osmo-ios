@@ -212,6 +212,24 @@ struct CalendarEvent: Codable, Sendable, Identifiable {
     }
 }
 
+// MARK: - Suggestions
+
+struct SuggestionsResponse: Codable, Sendable {
+    let suggestions: [String]
+}
+
+// MARK: - Briefing
+
+struct BriefingResponse: Codable, Sendable {
+    let briefing: String?
+    let generatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case briefing
+        case generatedAt = "generated_at"
+    }
+}
+
 // MARK: - API Error
 
 struct APIErrorResponse: Codable, Sendable {

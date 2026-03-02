@@ -128,7 +128,8 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
         let t = Float(time)
 
         // Advance orbit angle using modulation speed multiplier
-        p.orbitAngle += p.orbitSpeed * modulation.orbitSpeedMultiplier * dt
+        let effectiveOrbitSpeed = modulation.forceUniformDirection ? abs(p.orbitSpeed) : p.orbitSpeed
+        p.orbitAngle += effectiveOrbitSpeed * modulation.orbitSpeedMultiplier * dt
 
         // Noise-driven wander with modulation multiplier
         let nx = sin(t * ParticlePhysics.noiseSpeed + p.noiseOffsetX) * cos(t * 0.7 + p.phase)

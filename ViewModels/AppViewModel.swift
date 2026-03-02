@@ -33,6 +33,9 @@ final class AppViewModel {
     var statusMessage: String?
     private var statusDismissTask: Task<Void, Never>?
 
+    // Morning briefing
+    var briefingText: String?
+
     // LLM response shown on HomeView
     var lastSpokenResponse: String?
     var displayedResponse: String = ""
@@ -49,6 +52,7 @@ final class AppViewModel {
     var orbPhase: OrbPhase = .idle
 
     let apiClient = APIClient()
+    let conversationStore = ConversationStore()
 
     // MARK: - Orb Phase
 
@@ -61,9 +65,9 @@ final class AppViewModel {
         case error
     }
 
-    // MARK: - Placeholder suggestions (customize these)
+    // MARK: - Suggestions (dynamically updated from backend)
 
-    let suggestions: [String] = [
+    var suggestions: [String] = [
         "What's on my calendar today?",
         "Schedule a meeting tomorrow at 2pm",
         "Find free time this week",
@@ -88,6 +92,30 @@ final class AppViewModel {
         let messageId: UUID
     }
 
+    func fetchSuggestions() {
+        Task {
+            do {
+                let fetched = try await apiClient.fetchSuggestions()
+                if !fetched.isEmpty {
+                    suggestions = fetched
+                }
+            } catch {
+                // Silently fail — keep default suggestions
+            }
+        }
+    }
+
+    func fetchBriefing() {
+        Task {
+            do {
+                let response = try await apiClient.fetchBriefing()
+                briefingText = response.briefing
+            } catch {
+                // Silently fail — no briefing available
+            }
+        }
+    }
+
     func fetchUpcomingEvents() {
         isLoadingEvents = true
         Task {
@@ -99,6 +127,24 @@ final class AppViewModel {
             }
             isLoadingEvents = false
         }
+    }
+
+    func loadPersistedConversations() {
+        let loaded = conversationStore.load()
+        if !loaded.isEmpty {
+            conversations = loaded
+        }
+    }
+
+    func persistConversations() {
+        var all = conversations
+        if let current = currentConversation, !current.messages.isEmpty {
+            // Include current conversation in the save (don't duplicate)
+            if !all.contains(where: { $0.id == current.id }) {
+                all.append(current)
+            }
+        }
+        conversationStore.save(all)
     }
 
     func addGreetingIfNeeded() {
@@ -304,6 +350,7 @@ final class AppViewModel {
         if let conversation = currentConversation, !conversation.messages.isEmpty {
             conversations.append(conversation)
         }
+        persistConversations()
         currentConversation = nil
         showChat = false
         inputText = ""
@@ -439,6 +486,9 @@ final class AppViewModel {
         if !response.deviceActions.isEmpty {
             executeDeviceActions(response.deviceActions, planId: response.planId)
         }
+
+        // Persist after each response
+        persistConversations()
     }
 
     private func handleError(_ error: APIError) {

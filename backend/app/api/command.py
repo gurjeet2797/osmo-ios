@@ -7,6 +7,8 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datetime import UTC, datetime
+
 from app.config import settings
 from app.connectors.google_calendar import credentials_from_encrypted
 from app.tools.loader import discover_and_load_skills
@@ -14,11 +16,13 @@ from app.connectors.llm import LLMResponse, ToolCall, create_llm_client
 from app.core.executor import Executor
 from app.core.planner import _from_api_name, _to_api_name, build_tools, build_system_prompt
 from app.core.policy import evaluate
+from app.core.preference_manager import PreferenceManager
 from app.core.session_manager import SessionManager
 from app.core.verifier import verify_device_result, verify_server_step
 from app.db.session import get_db
 from app.dependencies import get_current_user
 from app.models.audit import AuditLog
+from app.models.command_history import CommandHistory
 from app.models.user import User
 from app.schemas.action_plan import ActionPlan, ActionStep, RiskLevel
 from app.schemas.command import (
@@ -165,52 +169,23 @@ async def _llm_summarize_anthropic(
 async def _llm_summarize_openai(
     llm: Any,
     system_prompt: str,
+    session_messages: list[dict[str, Any]],
     user_message: str,
     tool_calls: list[ToolCall],
     step_results: list,
     tools: list[dict[str, Any]],
-) -> str:
-    """Send tool results back to LLM via OpenAI format for summary."""
-    messages: list[dict[str, Any]] = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_message},
-    ]
+) -> tuple[str, list[dict[str, Any]]]:
+    """Send tool results back to LLM via OpenAI format and return summary + updated messages."""
+    # Append tool results to session
+    SessionManager.append_openai_tool_results(session_messages, tool_calls, step_results)
 
-    # The assistant's response that contained tool_calls
-    messages.append(
-        {
-            "role": "assistant",
-            "content": None,
-            "tool_calls": [
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": _to_api_name(tc.name),
-                        "arguments": json.dumps(tc.arguments),
-                    },
-                }
-                for tc in tool_calls
-            ],
-        }
-    )
+    # Follow up for natural summary
+    follow_up = await llm.follow_up(system_prompt, session_messages, tools=tools)
 
-    # Tool results
-    for tc, sr in zip(tool_calls, step_results):
-        if sr.success:
-            content = json.dumps(sr.result) if sr.result else '{"status": "ok"}'
-        else:
-            content = json.dumps({"error": sr.error or "unknown error"})
-        messages.append(
-            {
-                "role": "tool",
-                "tool_call_id": tc.id,
-                "content": content,
-            }
-        )
+    # Append assistant response to session
+    SessionManager.append_openai_assistant_response(session_messages, follow_up)
 
-    follow_up = await llm.follow_up(system_prompt, messages, tools=tools)
-    return follow_up.text or "Done."
+    return follow_up.text or "Done.", session_messages
 
 
 async def _audit(
@@ -236,6 +211,30 @@ async def _audit(
     await db.commit()
 
 
+async def _record_command(
+    db: AsyncSession,
+    user: User,
+    body: CommandRequest,
+    tool_names: list[str],
+) -> None:
+    """Record a command to history for pattern analysis (best-effort)."""
+    try:
+        now = datetime.now(UTC)
+        entry = CommandHistory(
+            user_id=str(user.id),
+            transcript=body.transcript,
+            tool_names=tool_names if tool_names else None,
+            latitude=body.latitude,
+            longitude=body.longitude,
+            hour_of_day=now.hour,
+            day_of_week=now.weekday(),
+        )
+        db.add(entry)
+        await db.commit()
+    except Exception:
+        log.warning("command_history.record_failed", exc_info=True)
+
+
 @router.post("", response_model=CommandResponse)
 async def handle_command(
     body: CommandRequest,
@@ -244,19 +243,23 @@ async def handle_command(
 ):
     llm = create_llm_client()
     providers = body.linked_providers or ["google_calendar"]
+
+    # Load user preferences and inject into system prompt
+    pref_mgr = PreferenceManager(db, str(user.id))
+    prefs = await pref_mgr.get_all()
+    pref_block = PreferenceManager.build_context_block(prefs)
+
     system_prompt = build_system_prompt(
         body.timezone, body.locale, providers,
         latitude=body.latitude, longitude=body.longitude,
+        user_preferences=pref_block,
     )
     tools = build_tools()
     use_anthropic = settings.llm_provider == "anthropic"
 
-    # 1. Load session history (Anthropic) or start fresh (OpenAI)
-    session_messages: list[dict[str, Any]] = []
-    sm: SessionManager | None = None
-    if use_anthropic:
-        sm = SessionManager(db, str(user.id))
-        session_messages = await sm.load()
+    # 1. Load session history (both providers now use sessions)
+    sm = SessionManager(db, str(user.id))
+    session_messages = await sm.load()
 
     # 2. Ask the LLM (with session recovery on corrupted history)
     try:
@@ -264,12 +267,12 @@ async def handle_command(
             system_prompt,
             body.transcript,
             tools,
-            messages=session_messages if use_anthropic else None,
+            messages=session_messages,
         )
     except Exception as chat_err:
         # If session history is corrupted (e.g. dangling tool_use without tool_result),
         # clear it and retry with a fresh session.
-        if use_anthropic and sm and "tool_use" in str(chat_err):
+        if "tool_use" in str(chat_err) or "tool_call" in str(chat_err):
             log.warning("session.corrupted, clearing and retrying", error=str(chat_err))
             await sm.clear()
             session_messages = []
@@ -286,11 +289,14 @@ async def handle_command(
     if use_anthropic:
         SessionManager.append_user_message(session_messages, body.transcript)
         SessionManager.append_assistant_response(session_messages, response)
+    else:
+        SessionManager.append_openai_user_message(session_messages, body.transcript)
+        SessionManager.append_openai_assistant_response(session_messages, response)
 
     # 3. No tool calls → pure conversational response
     if not response.tool_calls:
-        if sm:
-            await sm.save(session_messages)
+        await sm.save(session_messages)
+        await _record_command(db, user, body, [])
         return CommandResponse(
             spoken_response=response.text or "...",
             requires_confirmation=False,
@@ -308,8 +314,7 @@ async def handle_command(
     # 5. Policy gate
     policy_result = evaluate(plan)
     if policy_result.blocked:
-        if sm:
-            await sm.save(session_messages)
+        await sm.save(session_messages)
         return CommandResponse(
             spoken_response=policy_result.block_reason or "This action is blocked by policy.",
             action_plan=plan,
@@ -326,8 +331,7 @@ async def handle_command(
         ]
         prompt = " ".join(phrases) if phrases else f"Confirm: {plan.user_intent}?"
 
-        if sm:
-            await sm.save(session_messages)
+        await sm.save(session_messages)
         return CommandResponse(
             spoken_response=prompt,
             action_plan=plan,
@@ -357,16 +361,18 @@ async def handle_command(
             llm, system_prompt, session_messages,
             response.tool_calls, exec_result.step_results, tools,
         )
-        if sm:
-            await sm.save(session_messages)
     else:
-        spoken = await _llm_summarize_openai(
-            llm, system_prompt, body.transcript,
+        spoken, session_messages = await _llm_summarize_openai(
+            llm, system_prompt, session_messages, body.transcript,
             response.tool_calls, exec_result.step_results, tools,
         )
+    await sm.save(session_messages)
 
     attachments = _extract_attachments(exec_result.step_results)
     updated_name = _extract_updated_name(exec_result.step_results)
+
+    # Record command history for pattern analysis
+    await _record_command(db, user, body, [s.tool_name for s in plan.steps])
 
     return CommandResponse(
         spoken_response=spoken,
@@ -423,19 +429,19 @@ async def confirm_plan(
         for step in plan.steps
     ]
 
+    sm = SessionManager(db, str(user.id))
     if synthetic_tool_calls and exec_result.step_results:
         if use_anthropic:
             spoken, session_messages = await _llm_summarize_anthropic(
                 llm, system_prompt, session_messages,
                 synthetic_tool_calls, exec_result.step_results, tools,
             )
-            sm = SessionManager(db, str(user.id))
-            await sm.save(session_messages)
         else:
-            spoken = await _llm_summarize_openai(
-                llm, system_prompt, plan.user_intent,
+            spoken, session_messages = await _llm_summarize_openai(
+                llm, system_prompt, session_messages, plan.user_intent,
                 synthetic_tool_calls, exec_result.step_results, tools,
             )
+        await sm.save(session_messages)
     else:
         parts = []
         for sr in exec_result.step_results:
@@ -458,6 +464,17 @@ async def confirm_plan(
         attachments=attachments,
         updated_user_name=updated_name,
     )
+
+
+@router.get("/briefing")
+async def get_briefing(
+    user: Annotated[User, Depends(get_current_user)],
+):
+    from app.core.briefing import get_cached_briefing
+    data = await get_cached_briefing(str(user.id))
+    if data:
+        return data
+    return {"briefing": None, "generated_at": None}
 
 
 @router.post("/session/clear")

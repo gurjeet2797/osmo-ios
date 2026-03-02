@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-5-20250929"
-    anthropic_max_tokens: int = 4096
+    anthropic_max_tokens: int = 8192
 
     session_max_messages: int = 50
 

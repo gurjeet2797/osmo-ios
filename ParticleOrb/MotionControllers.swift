@@ -13,6 +13,8 @@ nonisolated struct MotionModulation: Sendable {
     var brightnessBase: Float
     var brightnessPulseAmp: Float
     var globalScale: Float
+    /// When true, all particles orbit in the same (clockwise) direction.
+    var forceUniformDirection: Bool = false
 
     /// Calm default matching current hardcoded values.
     static let idle = MotionModulation(
@@ -65,33 +67,34 @@ nonisolated struct ListeningPulse: MotionController, Sendable {
 
 // MARK: - Thinking Spin
 
-/// Stateful: randomizes target angular velocity every 1.5-3s, smoothly converges.
+/// Elegant clockwise spin with gentle speed undulation for a fluid, breathing feel.
 nonisolated final class ThinkingSpin: MotionController, @unchecked Sendable {
-    private var targetOrbitSpeed: Float = 1.8
-    private var currentOrbitSpeed: Float = 1.0
-    private var nextChangeTime: Float = 0
+    private var currentOrbitSpeed: Float = 1.6
+    private var phaseAccumulator: Float = 0
 
     func modulate(time: Float, dt: Float, stateProgress: Float) -> MotionModulation {
-        // Periodically pick a new target angular velocity
-        if time >= nextChangeTime {
-            targetOrbitSpeed = Float.random(in: 1.2...2.8) * (Bool.random() ? 1.0 : -1.0)
-            nextChangeTime = time + Float.random(in: 1.5...3.0)
-        }
+        phaseAccumulator += dt
 
-        // Smooth convergence (no jitter)
-        let convergenceRate: Float = 2.0
-        currentOrbitSpeed += (targetOrbitSpeed - currentOrbitSpeed) * min(convergenceRate * dt, 1.0)
+        // Gentle sinusoidal speed variation — always positive (clockwise only)
+        // Oscillates between ~1.4 and ~2.2 for a smooth, breathing rhythm
+        let speedWave = sin(phaseAccumulator * 0.8) * 0.4
+        let targetSpeed: Float = 1.8 + speedWave
+        currentOrbitSpeed += (targetSpeed - currentOrbitSpeed) * min(3.0 * dt, 1.0)
+
+        // Subtle brightness pulse synced with speed changes
+        let brightPulse = 0.08 * sin(phaseAccumulator * 1.2)
 
         return MotionModulation(
-            springStiffness: 6.0,
-            springDamping: 3.0,
-            noiseMultiplier: 0.6,
-            orbitSpeedMultiplier: abs(currentOrbitSpeed),
-            breatheAmplitude: 0.06,
-            breatheFrequency: 0.8,
-            brightnessBase: 0.55,
-            brightnessPulseAmp: 0.1,
-            globalScale: 1.0
+            springStiffness: 6.5,
+            springDamping: 3.2,
+            noiseMultiplier: 0.3,
+            orbitSpeedMultiplier: currentOrbitSpeed,
+            breatheAmplitude: 0.05 + 0.02 * sin(phaseAccumulator * 0.6),
+            breatheFrequency: 0.7,
+            brightnessBase: 0.6 + brightPulse,
+            brightnessPulseAmp: 0.12,
+            globalScale: 1.0,
+            forceUniformDirection: true
         )
     }
 }

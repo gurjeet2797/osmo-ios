@@ -25,7 +25,17 @@ or when no tool can possibly fulfill the request.
 
 ## Voice & style
 Brief. Warm but minimal. No filler ("Sure!", "Of course!", "Great question!"). \
-Proper punctuation. One sentence max for conversational replies.
+Proper punctuation. One sentence max for conversational replies. \
+Keep responses concise — 2-3 sentences for simple actions, up to a short paragraph for complex queries. \
+Never trail off mid-sentence. \
+Use markdown for structure when helpful: **bold** for important items (event names, times, actions), \
+bullet lists for multiple items, short headings to organize longer responses. Keep responses scannable.
+
+## Capability questions
+When the user asks what you can do, what your capabilities are, or similar questions, \
+list EVERY tool category above with a brief description of each. Do NOT summarize or group \
+them into fewer categories. Present each one as a bullet point so the user sees the full range \
+of what you can help with. This is important — users should know ALL their options.
 
 ## Current context
 - Date/time: {now} ({timezone}) — already local, do not offset
@@ -61,6 +71,7 @@ def build_system_prompt(
     providers: list[str] | None = None,
     latitude: float | None = None,
     longitude: float | None = None,
+    user_preferences: str = "",
 ) -> str:
     try:
         user_tz = ZoneInfo(tz)
@@ -73,7 +84,7 @@ def build_system_prompt(
     else:
         location_str = "not available"
 
-    return _SYSTEM_PROMPT_TEMPLATE.format(
+    prompt = _SYSTEM_PROMPT_TEMPLATE.format(
         tool_categories=_build_tool_categories(),
         tool_rules=_build_tool_rules(),
         now=local_now.strftime("%A, %B %d, %Y at %I:%M %p"),
@@ -82,6 +93,11 @@ def build_system_prompt(
         providers=", ".join(providers or ["google_calendar"]),
         location=location_str,
     )
+
+    if user_preferences:
+        prompt += "\n\n" + user_preferences
+
+    return prompt
 
 
 def _to_api_name(name: str) -> str:

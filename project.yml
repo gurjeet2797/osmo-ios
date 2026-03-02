@@ -42,11 +42,15 @@ targets:
         group: Views
       - path: Views/AttachmentView.swift
         group: Views
+      - path: Views/MarkdownContentView.swift
+        group: Views
       # ViewModels
       - path: ViewModels/AppViewModel.swift
         group: ViewModels
       # Utilities
       - path: Utilities/GlassEffect+Adaptive.swift
+        group: Utilities
+      - path: Utilities/MarkdownParser.swift
         group: Utilities
       # ParticleOrb
       - path: ParticleOrb/ParticleOrbView.swift
@@ -99,6 +103,8 @@ targets:
       - path: Services/TranslationManager.swift
         group: Services
       - path: Services/NavigationManager.swift
+        group: Services
+      - path: Services/ConversationStore.swift
         group: Services
     settings:
       base:

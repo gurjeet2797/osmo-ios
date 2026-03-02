@@ -77,6 +77,19 @@ final class APIClient: Sendable {
         return response.events
     }
 
+    // MARK: - Suggestions
+
+    func fetchSuggestions() async throws -> [String] {
+        let response: SuggestionsResponse = try await get(path: "/suggestions")
+        return response.suggestions
+    }
+
+    // MARK: - Briefing
+
+    func fetchBriefing() async throws -> BriefingResponse {
+        return try await get(path: "/command/briefing")
+    }
+
     // MARK: - Session
 
     func clearSession() async throws {

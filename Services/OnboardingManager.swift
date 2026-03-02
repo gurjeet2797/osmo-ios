@@ -37,7 +37,7 @@ final class OnboardingManager {
         case .voiceFirst: return "your voice-first assistant"
         case .connect: return "let's connect"
         case .microphone: return "one more thing"
-        case .calendar: return "stay organized"
+        case .calendar: return "apple calendar too?"
         case .done: return "you're all set"
         }
     }
@@ -48,7 +48,7 @@ final class OnboardingManager {
         case .voiceFirst: return "speak naturally. osmo listens, plans, and acts."
         case .connect: return "sign in with google to unlock calendar & email"
         case .microphone: return "osmo needs your voice to understand you"
-        case .calendar: return "manage your schedule with a sentence"
+        case .calendar: return "optionally connect your on-device calendar for local events"
         case .done: return "tap the orb to begin"
         }
     }
@@ -58,8 +58,16 @@ final class OnboardingManager {
         case .welcome, .voiceFirst: return "continue"
         case .connect: return "sign in with google"
         case .microphone: return "enable microphone"
-        case .calendar: return "enable calendar"
+        case .calendar: return "enable apple calendar"
         case .done: return nil
+        }
+    }
+
+    /// Secondary action label — shown alongside the primary button for skippable steps.
+    var skipLabel: String? {
+        switch currentStep {
+        case .calendar: return "skip"
+        default: return nil
         }
     }
 

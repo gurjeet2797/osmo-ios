@@ -1,0 +1,10 @@
+[skill]
+name = "memory"
+display_name = "Memory"
+description = "store and recall user preferences (memory.set_preference, memory.get_preferences)"
+tool_modules = ["user_memory"]
+planner_instructions = [
+    "When the user states a preference ('always use...', 'I prefer...', 'default to...'), call memory.set_preference immediately.",
+    "Never store sensitive data (passwords, tokens, financial info) as preferences.",
+    "Use memory.get_preferences to recall what you know about the user when relevant.",
+]

@@ -74,7 +74,10 @@ struct ContentView: View {
             .task {
                 viewModel.authManager = authManager
                 authManager.restoreSession()
+                viewModel.loadPersistedConversations()
                 viewModel.addGreetingIfNeeded()
+                viewModel.fetchSuggestions()
+                viewModel.fetchBriefing()
                 LocationManager.shared.requestPermissionAndStart()
             }
     }

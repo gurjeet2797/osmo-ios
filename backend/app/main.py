@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import attachments, auth, calendar, command, health
+from app.api import attachments, auth, calendar, command, health, suggestions
 from app.config import settings
 from app.db.session import engine, redis_pool
 
@@ -29,7 +29,20 @@ async def lifespan(app: FastAPI):
     from urllib.parse import urlparse
     db_host = urlparse(settings.database_url).hostname or "unknown"
     log.info("Starting Osmo backend", db_host=db_host, environment=settings.environment)
+
+    # Start background job scheduler
+    from app.core.scheduler import start_scheduler, stop_scheduler
+    try:
+        start_scheduler()
+    except Exception:
+        log.warning("scheduler.start_failed", exc_info=True)
+
     yield
+
+    try:
+        stop_scheduler()
+    except Exception:
+        log.warning("scheduler.stop_failed", exc_info=True)
     await engine.dispose()
     await redis_pool.aclose()
 
@@ -54,3 +67,4 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(command.router, prefix="/command", tags=["command"])
 app.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
 app.include_router(attachments.router, prefix="/attachments", tags=["attachments"])
+app.include_router(suggestions.router, prefix="/suggestions", tags=["suggestions"])

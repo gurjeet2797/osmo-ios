@@ -1,6 +1,6 @@
 import Foundation
 
-struct Message: Identifiable, Sendable {
+struct Message: Identifiable, Sendable, Codable {
     let id: UUID
     let content: String
     let isUser: Bool
@@ -35,9 +35,14 @@ struct Message: Identifiable, Sendable {
         self.deviceActions = deviceActions
         self.attachments = attachments
     }
+
+    enum CodingKeys: String, CodingKey {
+        case id, content, isUser, timestamp, categories, tags, planId
+        case requiresConfirmation, deviceActions, attachments
+    }
 }
 
-struct Conversation: Identifiable, Sendable {
+struct Conversation: Identifiable, Sendable, Codable {
     let id: UUID
     var messages: [Message]
     let createdAt: Date
@@ -51,7 +56,7 @@ struct Conversation: Identifiable, Sendable {
 
 // MARK: - Category Models (customize these for your app)
 
-struct Categories: Sendable {
+struct Categories: Sendable, Codable {
     let category1: String
     let category2: String
     let category3: String

@@ -16,6 +16,7 @@ import app.tools.ios_camera  # noqa: F401 — register tools
 import app.tools.ios_messages  # noqa: F401 — register tools
 import app.tools.ios_music  # noqa: F401 — register tools
 import app.tools.google_gmail  # noqa: F401 — register tools
+import app.tools.user_profile  # noqa: F401 — register tools
 from app.config import settings
 from app.connectors.google_calendar import credentials_from_encrypted
 from app.connectors.llm import LLMResponse, ToolCall, create_llm_client
@@ -45,6 +46,14 @@ router = APIRouter()
 _pending_plans: dict[str, tuple[ActionPlan, str, list[dict[str, Any]]]] = {}
 
 
+def _extract_updated_name(step_results: list) -> str | None:
+    """Scan step results for a user_profile.set_name result and return the updated name."""
+    for sr in step_results:
+        if sr.success and sr.result and sr.step.tool_name == "user_profile.set_name":
+            return sr.result.get("updated_name")
+    return None
+
+
 def _extract_attachments(step_results: list) -> list[Attachment]:
     """Scan executor step results for attachment data returned by gmail tools."""
     attachments: list[Attachment] = []
@@ -65,7 +74,7 @@ def _extract_attachments(step_results: list) -> list[Attachment]:
     return attachments
 
 
-def _build_context(user: User) -> ToolContext:
+def _build_context(user: User, db: AsyncSession | None = None) -> ToolContext:
     google_creds = None
     if user.google_tokens_encrypted:
         google_creds = credentials_from_encrypted(user.google_tokens_encrypted)
@@ -73,6 +82,7 @@ def _build_context(user: User) -> ToolContext:
         user_id=str(user.id),
         google_credentials=google_creds,
         timezone=user.timezone,
+        db=db,
     )
 
 
@@ -308,7 +318,7 @@ async def handle_command(
         )
 
     # 7. Execute
-    context = _build_context(user)
+    context = _build_context(user, db=db)
     executor = Executor()
     exec_result = await executor.execute_plan(plan, context)
 
@@ -337,6 +347,7 @@ async def handle_command(
         )
 
     attachments = _extract_attachments(exec_result.step_results)
+    updated_name = _extract_updated_name(exec_result.step_results)
 
     return CommandResponse(
         spoken_response=spoken,
@@ -344,6 +355,7 @@ async def handle_command(
         device_actions=exec_result.device_actions,
         plan_id=plan.plan_id,
         attachments=attachments,
+        updated_user_name=updated_name,
     )
 
 
@@ -361,7 +373,7 @@ async def confirm_plan(
     if owner_id != str(user.id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Plan belongs to another user")
 
-    context = _build_context(user)
+    context = _build_context(user, db=db)
     executor = Executor()
     exec_result = await executor.execute_confirmed_plan(plan, context)
 
@@ -417,6 +429,7 @@ async def confirm_plan(
         spoken = " ".join(parts) if parts else f"Done: {plan.user_intent}"
 
     attachments = _extract_attachments(exec_result.step_results)
+    updated_name = _extract_updated_name(exec_result.step_results)
 
     return CommandResponse(
         spoken_response=spoken,
@@ -424,6 +437,7 @@ async def confirm_plan(
         device_actions=exec_result.device_actions,
         plan_id=plan.plan_id,
         attachments=attachments,
+        updated_user_name=updated_name,
     )
 
 

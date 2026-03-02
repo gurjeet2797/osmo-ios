@@ -51,7 +51,9 @@ class ToolContext:
         user_id: str,
         google_credentials: Any | None = None,
         timezone: str = "UTC",
+        db: Any | None = None,
     ):
         self.user_id = user_id
         self.google_credentials = google_credentials
         self.timezone = timezone
+        self.db = db

@@ -184,7 +184,8 @@ struct CosmicBackground: View {
                         withAnimation(.easeOut(duration: 0.8)) {
                             touchInfluence = 0
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(850))
                             if touchInfluence < 0.01 {
                                 touchPoint = nil
                             }

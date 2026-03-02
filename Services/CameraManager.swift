@@ -314,30 +314,36 @@ extension AutoCaptureViewController: AVCapturePhotoCaptureDelegate {
             return
         }
 
+        // PHPhotoLibrary callbacks are @Sendable and fire on background threads.
+        // Use Task { @MainActor in } to hop back for @MainActor-isolated calls.
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [action, onDismiss] status in
             guard status == .authorized || status == .limited else {
-                CameraManager.shared.complete(DeviceActionResult(
-                    actionId: action.actionId,
-                    idempotencyKey: action.idempotencyKey,
-                    success: false,
-                    result: [:],
-                    error: "Photo library access denied"
-                ))
-                DispatchQueue.main.async { onDismiss() }
+                Task { @MainActor in
+                    CameraManager.shared.complete(DeviceActionResult(
+                        actionId: action.actionId,
+                        idempotencyKey: action.idempotencyKey,
+                        success: false,
+                        result: [:],
+                        error: "Photo library access denied"
+                    ))
+                    onDismiss()
+                }
                 return
             }
 
             PHPhotoLibrary.shared().performChanges({
                 PHAssetChangeRequest.creationRequestForAsset(from: image)
             }) { success, saveError in
-                CameraManager.shared.complete(DeviceActionResult(
-                    actionId: action.actionId,
-                    idempotencyKey: action.idempotencyKey,
-                    success: success,
-                    result: success ? ["saved": .bool(true), "type": .string("photo")] : [:],
-                    error: saveError?.localizedDescription
-                ))
-                DispatchQueue.main.async { onDismiss() }
+                Task { @MainActor in
+                    CameraManager.shared.complete(DeviceActionResult(
+                        actionId: action.actionId,
+                        idempotencyKey: action.idempotencyKey,
+                        success: success,
+                        result: success ? ["saved": .bool(true), "type": .string("photo")] : [:],
+                        error: saveError?.localizedDescription
+                    ))
+                    onDismiss()
+                }
             }
         }
     }
@@ -356,14 +362,16 @@ extension AutoCaptureViewController: AVCaptureFileOutputRecordingDelegate {
 
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { [action, onDismiss] status in
             guard status == .authorized || status == .limited else {
-                CameraManager.shared.complete(DeviceActionResult(
-                    actionId: action.actionId,
-                    idempotencyKey: action.idempotencyKey,
-                    success: false,
-                    result: [:],
-                    error: "Photo library access denied"
-                ))
-                DispatchQueue.main.async { onDismiss() }
+                Task { @MainActor in
+                    CameraManager.shared.complete(DeviceActionResult(
+                        actionId: action.actionId,
+                        idempotencyKey: action.idempotencyKey,
+                        success: false,
+                        result: [:],
+                        error: "Photo library access denied"
+                    ))
+                    onDismiss()
+                }
                 return
             }
 
@@ -371,14 +379,16 @@ extension AutoCaptureViewController: AVCaptureFileOutputRecordingDelegate {
                 PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: outputFileURL)
             }) { success, saveError in
                 try? FileManager.default.removeItem(at: outputFileURL)
-                CameraManager.shared.complete(DeviceActionResult(
-                    actionId: action.actionId,
-                    idempotencyKey: action.idempotencyKey,
-                    success: success,
-                    result: success ? ["saved": .bool(true), "type": .string("video")] : [:],
-                    error: saveError?.localizedDescription
-                ))
-                DispatchQueue.main.async { onDismiss() }
+                Task { @MainActor in
+                    CameraManager.shared.complete(DeviceActionResult(
+                        actionId: action.actionId,
+                        idempotencyKey: action.idempotencyKey,
+                        success: success,
+                        result: success ? ["saved": .bool(true), "type": .string("video")] : [:],
+                        error: saveError?.localizedDescription
+                    ))
+                    onDismiss()
+                }
             }
         }
     }

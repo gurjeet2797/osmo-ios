@@ -87,7 +87,7 @@ class AnthropicLLMClient(BaseLLMClient):
             "max_tokens": self._max_tokens,
             "system": system_prompt,
             "messages": msgs,
-            "temperature": 0.6,
+            "temperature": 0.3,
         }
         if tools:
             kwargs["tools"] = tools
@@ -107,7 +107,7 @@ class AnthropicLLMClient(BaseLLMClient):
             "max_tokens": self._max_tokens,
             "system": system_prompt,
             "messages": messages,
-            "temperature": 0.6,
+            "temperature": 0.5,
         }
         if tools:
             kwargs["tools"] = tools
@@ -171,7 +171,7 @@ class OpenAILLMClient(BaseLLMClient):
         kwargs: dict[str, Any] = {
             "model": self._model,
             "messages": msgs,
-            "temperature": 0.6,
+            "temperature": 0.3,
         }
         if tools:
             kwargs["tools"] = tools
@@ -194,7 +194,7 @@ class OpenAILLMClient(BaseLLMClient):
         kwargs: dict[str, Any] = {
             "model": self._model,
             "messages": msgs,
-            "temperature": 0.6,
+            "temperature": 0.5,
         }
         if tools:
             kwargs["tools"] = tools

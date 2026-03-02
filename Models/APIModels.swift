@@ -47,6 +47,7 @@ struct CommandResponse: Codable, Sendable {
     let confirmationPrompt: String?
     let planId: String?
     let attachments: [Attachment]
+    let updatedUserName: String?
 
     enum CodingKeys: String, CodingKey {
         case spokenResponse = "spoken_response"
@@ -56,6 +57,7 @@ struct CommandResponse: Codable, Sendable {
         case confirmationPrompt = "confirmation_prompt"
         case planId = "plan_id"
         case attachments
+        case updatedUserName = "updated_user_name"
     }
 
     init(from decoder: Decoder) throws {
@@ -67,6 +69,7 @@ struct CommandResponse: Codable, Sendable {
         confirmationPrompt = try container.decodeIfPresent(String.self, forKey: .confirmationPrompt)
         planId = try container.decodeIfPresent(String.self, forKey: .planId)
         attachments = try container.decodeIfPresent([Attachment].self, forKey: .attachments) ?? []
+        updatedUserName = try container.decodeIfPresent(String.self, forKey: .updatedUserName)
     }
 }
 

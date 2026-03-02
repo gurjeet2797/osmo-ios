@@ -7,7 +7,7 @@ enum APIEnvironment {
     var baseURL: URL {
         switch self {
         case .development:
-            URL(string: "https://hispid-kenyetta-diphtheritically.ngrok-free.dev")!
+            URL(string: "https://osmo-ios-production.up.railway.app")!
         case .production:
             URL(string: "https://osmo-ios-production.up.railway.app")!
         }

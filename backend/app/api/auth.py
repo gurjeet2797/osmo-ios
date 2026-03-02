@@ -149,6 +149,7 @@ async def google_callback(
         user_info = resp.json()
 
     email = user_info.get("email")
+    google_name = user_info.get("name")
     if not email:
         if is_mobile:
             params = urlencode({"error": "No email in Google response."})
@@ -172,10 +173,12 @@ async def google_callback(
     encrypted_tokens = fernet.encrypt(tokens_json.encode()).decode()
 
     if user is None:
-        user = User(email=email, google_tokens_encrypted=encrypted_tokens)
+        user = User(email=email, name=google_name, google_tokens_encrypted=encrypted_tokens)
         db.add(user)
     else:
         user.google_tokens_encrypted = encrypted_tokens
+        if google_name and not user.name:
+            user.name = google_name
 
     await db.commit()
     await db.refresh(user)
@@ -183,7 +186,7 @@ async def google_callback(
     access_token = create_access_token(str(user.id))
 
     if is_mobile:
-        params = urlencode({"token": access_token, "email": email})
+        params = urlencode({"token": access_token, "email": email, "name": google_name or ""})
         return RedirectResponse(url=f"osmo://auth/callback?{params}")
 
     return {"access_token": access_token, "token_type": "bearer", "email": email}

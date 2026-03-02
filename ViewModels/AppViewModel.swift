@@ -370,6 +370,11 @@ final class AppViewModel {
     private func handleCommandResponse(_ response: CommandResponse) {
         isLoading = false
 
+        // Update user name if the backend changed it
+        if let newName = response.updatedUserName {
+            authManager?.updateName(newName)
+        }
+
         // Show response on HomeView with typewriter animation
         let fullText = response.spokenResponse
         lastSpokenResponse = fullText

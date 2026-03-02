@@ -23,13 +23,11 @@ final class OnboardingManager {
     }
 
     @ObservationIgnored
-    private var _hasCompleted: Bool = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    private var isAdvancing = false
 
-    var hasCompleted: Bool {
-        get { _hasCompleted }
-        set {
-            _hasCompleted = newValue
-            UserDefaults.standard.set(newValue, forKey: "hasCompletedOnboarding")
+    private(set) var hasCompleted: Bool = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
+        didSet {
+            UserDefaults.standard.set(hasCompleted, forKey: "hasCompletedOnboarding")
         }
     }
 
@@ -66,27 +64,34 @@ final class OnboardingManager {
     }
 
     func advance() {
+        guard !isAdvancing else { return }
+        isAdvancing = true
+
         let allSteps = Step.allCases
         guard let idx = allSteps.firstIndex(of: currentStep),
               idx + 1 < allSteps.count else {
+            isAdvancing = false
             complete()
             return
         }
+
+        let nextStep = allSteps[idx + 1]
 
         withAnimation(.easeOut(duration: 0.3)) {
             stepOpacity = 0
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            self.currentStep = allSteps[idx + 1]
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            self.currentStep = nextStep
+            self.isAdvancing = false
             withAnimation(.easeIn(duration: 0.4)) {
                 self.stepOpacity = 1.0
             }
-        }
 
-        // Auto-complete the "done" step after a pause
-        if allSteps[idx + 1] == .done {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            // Auto-complete the "done" step after a pause
+            if nextStep == .done {
+                try? await Task.sleep(for: .seconds(2.5))
                 self.complete()
             }
         }
@@ -96,7 +101,8 @@ final class OnboardingManager {
         withAnimation(.easeOut(duration: 0.5)) {
             stepOpacity = 0
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
             self.hasCompleted = true
         }
     }

@@ -7,11 +7,17 @@ struct ParticleOrbView: View {
     @Bindable var viewModel: AppViewModel
     /// Number of particles to render (0 = use system default). Animatable.
     var visibleParticleCount: Int = 0
+    /// Whether the orb responds to taps/drags. Disable during onboarding.
+    var interactionEnabled: Bool = true
 
     @State private var system = ParticleSystem()
     @State private var opacity: Double = 0.0
     @State private var startDate = Date()
     @State private var glowIntensity: Float = 0.0
+
+    // Per-particle fade-in tracking (two scalars — no shared mutable array)
+    @State private var countChangeTime: TimeInterval = 0
+    @State private var previousVisibleCount: Int = 0
 
     // State machine + motion controller
     @State private var stateMachine = ParticleStateMachine()
@@ -51,6 +57,8 @@ struct ParticleOrbView: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        guard interactionEnabled else { return }
+
                         // Track drag start for tap/long-press detection
                         if dragStartTime == nil {
                             dragStartTime = Date()
@@ -83,6 +91,7 @@ struct ParticleOrbView: View {
                         }
                     }
                     .onEnded { value in
+                        guard interactionEnabled else { return }
                         system.releaseTouch()
 
                         // Detect tap: short duration + minimal movement
@@ -117,6 +126,14 @@ struct ParticleOrbView: View {
                 withAnimation(.easeOut(duration: 1.2).delay(1.6)) {
                     opacity = 1.0
                 }
+                // Seed reveal tracking so initial particles appear immediately
+                countChangeTime = Date().timeIntervalSinceReferenceDate
+                previousVisibleCount = 0
+            }
+            .onChange(of: visibleParticleCount) { oldCount, newCount in
+                guard newCount > 0, newCount != oldCount else { return }
+                previousVisibleCount = oldCount
+                countChangeTime = Date().timeIntervalSinceReferenceDate
             }
             .onChange(of: viewModel.orbPhase) { oldPhase, phase in
                 let (motionState, envelope) = ParticleStateMachine.motionState(for: phase, previous: oldPhase)
@@ -201,7 +218,14 @@ struct ParticleOrbView: View {
                     let pos = CGPoint(x: screenX, y: screenY)
 
                     let alpha = Double(particle.brightness)
-                    let revealAlpha = min(1.0, max(0.0, elapsed / 1.5))
+                    let revealAlpha: Double
+                    if idx < previousVisibleCount {
+                        // Already-visible particles: fully revealed
+                        revealAlpha = 1.0
+                    } else {
+                        // Newly added particles: fade in from countChangeTime over 1.2s
+                        revealAlpha = min(1.0, max(0.0, (time - countChangeTime) / 1.2))
+                    }
                     let finalAlpha = alpha * revealAlpha
 
                     // Try sprite-based drawing first

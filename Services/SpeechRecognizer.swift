@@ -76,7 +76,7 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
         }
 
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker])
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
         guard audioSession.isInputAvailable else {
@@ -87,9 +87,6 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
         let engine = AVAudioEngine()
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        if speechRecognizer.supportsOnDeviceRecognition {
-            request.requiresOnDeviceRecognition = true
-        }
 
         let inputNode = engine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
@@ -100,7 +97,7 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
         }
 
         // Install audio tap FIRST (before starting engine or recognition)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { buffer, _ in
             request.append(buffer)
         }
 

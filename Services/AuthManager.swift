@@ -63,6 +63,11 @@ final class AuthManager {
         isAuthenticating = false
     }
 
+    func updateName(_ newName: String) {
+        KeychainHelper.save(newName, for: .userName)
+        userName = newName
+    }
+
     func signOut() {
         KeychainHelper.deleteAll()
         isAuthenticated = false
@@ -78,13 +83,10 @@ final class AuthManager {
 
     @MainActor
     private func startWebAuthSession(url: URL) async throws -> URL {
-        try await withCheckedThrowingContinuation { continuation in
-            let session = ASWebAuthenticationSession(
-                url: url,
-                callback: .customScheme(APIConfig.customURLScheme)
-            ) { [weak self] callbackURL, error in
-                self?.currentAuthSession = nil
-                self?.contextProvider = nil
+        let callbackURL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+            // Explicit @Sendable prevents this closure from inheriting @MainActor.
+            // ASWebAuthenticationSession fires it on a background thread.
+            let handler: @Sendable (URL?, (any Error)?) -> Void = { callbackURL, error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else if let callbackURL {
@@ -93,6 +95,11 @@ final class AuthManager {
                     continuation.resume(throwing: APIError.invalidURL)
                 }
             }
+            let session = ASWebAuthenticationSession(
+                url: url,
+                callback: .customScheme(APIConfig.customURLScheme),
+                completionHandler: handler
+            )
             session.prefersEphemeralWebBrowserSession = false
 
             let provider = WebAuthContextProvider()
@@ -103,6 +110,10 @@ final class AuthManager {
 
             session.start()
         }
+        // Clean up on @MainActor after continuation resumes
+        currentAuthSession = nil
+        contextProvider = nil
+        return callbackURL
     }
 
     private func handleCallback(url: URL) throws {

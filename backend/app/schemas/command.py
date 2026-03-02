@@ -32,6 +32,7 @@ class CommandResponse(BaseModel):
     confirmation_prompt: str | None = None
     plan_id: str | None = None
     attachments: list[Attachment] = Field(default_factory=list)
+    updated_user_name: str | None = None
 
 
 class ConfirmRequest(BaseModel):

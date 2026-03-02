@@ -97,7 +97,7 @@ struct HomeView: View {
             // Auth error toast
             if let error = authManager.authError {
                 VStack {
-                    Text(error)
+                    Text(String(error.prefix(100)))
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.8))
                         .padding(.horizontal, 16)
@@ -119,7 +119,8 @@ struct HomeView: View {
 
                 ParticleOrbView(
                     viewModel: viewModel,
-                    visibleParticleCount: onboarding.isActive ? onboardingParticleCount : 0
+                    visibleParticleCount: onboarding.isActive ? onboardingParticleCount : 0,
+                    interactionEnabled: !onboarding.isActive
                 )
                 .opacity(bottomBarOpacity)
                 .padding(.bottom, -20)
@@ -183,7 +184,10 @@ struct HomeView: View {
 
     @ViewBuilder
     private var onboardingContent: some View {
-        // Title + subtitle centered
+        Spacer()
+        Spacer()
+
+        // Title + subtitle below center
         VStack(spacing: 16) {
             Text(onboarding.titleText)
                 .font(.system(size: 32, weight: .thin))
@@ -232,7 +236,7 @@ struct HomeView: View {
                     )
             }
             .opacity(onboarding.stepOpacity)
-            .padding(.bottom, 40)
+            .padding(.bottom, 80)
         }
     }
 
@@ -260,6 +264,8 @@ struct HomeView: View {
                 .opacity(titleOpacity)
                 .scaleEffect(titleScale)
                 .blur(radius: titleBlur)
+                .contentTransition(.opacity)
+                .animation(.easeInOut(duration: 0.6), value: greetingText)
                 .transition(.opacity)
 
             // Divider line
@@ -308,17 +314,23 @@ struct HomeView: View {
         case .welcome, .voiceFirst:
             onboarding.advance()
         case .connect:
-            Task { await authManager.signInWithGoogle() }
-            // Auto-advance handled by onChange(of: authManager.isAuthenticated)
-        case .microphone:
-            Task {
-                SFSpeechRecognizer.requestAuthorization { _ in }
-                AVAudioApplication.requestRecordPermission { _ in
-                    Task { @MainActor in onboarding.advance() }
+            if authManager.isAuthenticated {
+                onboarding.advance()
+            } else {
+                Task { @MainActor in
+                    await authManager.signInWithGoogle()
+                    if authManager.isAuthenticated && onboarding.currentStep == .connect {
+                        onboarding.advance()
+                    }
                 }
             }
+        case .microphone:
+            Task { @MainActor in
+                await requestSpeechAndMicrophoneAccess()
+                onboarding.advance()
+            }
         case .calendar:
-            Task {
+            Task { @MainActor in
                 _ = await EventKitManager.shared.requestAccess()
                 onboarding.advance()
             }
@@ -334,6 +346,12 @@ struct HomeView: View {
             return "Hi, \(name)"
         }
         return "Hi there"
+    }
+
+    /// Calls into nonisolated context so system API callbacks don't inherit
+    /// @MainActor isolation (which causes dispatch_assert_queue crashes).
+    private func requestSpeechAndMicrophoneAccess() async {
+        await _requestSpeechAndMicrophoneAccess()
     }
 
     private func runEntrance() {
@@ -359,4 +377,20 @@ struct HomeView: View {
             bottomBarOpacity = 1
         }
     }
+}
+
+// MARK: - Nonisolated permission helpers
+
+/// Runs speech + microphone permission requests outside @MainActor so the
+/// system's background-thread callbacks don't trigger dispatch_assert_queue.
+/// With SWIFT_APPROACHABLE_CONCURRENCY + SWIFT_DEFAULT_ACTOR_ISOLATION=MainActor,
+/// closures in @MainActor context get runtime main-queue assertions injected —
+/// calling this from nonisolated context avoids that.
+nonisolated private func _requestSpeechAndMicrophoneAccess() async {
+    _ = await withUnsafeContinuation { (continuation: UnsafeContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
+        SFSpeechRecognizer.requestAuthorization { status in
+            continuation.resume(returning: status)
+        }
+    }
+    _ = await AVAudioApplication.requestRecordPermission()
 }

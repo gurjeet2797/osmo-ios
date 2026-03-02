@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 from app.tools.base import BaseTool
+from app.tools.skill import SkillManifest
 
 _REGISTRY: dict[str, BaseTool] = {}
+_SKILLS: list[SkillManifest] = []
 
 
 def register_tool(tool: BaseTool) -> None:
     _REGISTRY[tool.name] = tool
+
+
+def register_skill(manifest: SkillManifest) -> None:
+    _SKILLS.append(manifest)
+
+
+def get_skill_manifests() -> list[SkillManifest]:
+    return list(_SKILLS)
 
 
 def get_tool(name: str) -> BaseTool | None:

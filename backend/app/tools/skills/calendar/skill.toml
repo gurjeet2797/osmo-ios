@@ -1,0 +1,9 @@
+[skill]
+name = "calendar"
+display_name = "Calendar"
+description = "list, create, update, delete events; check free/busy; quick-add (google_calendar.* or ios_eventkit.*)"
+tool_modules = ["google_calendar", "ios_eventkit"]
+planner_instructions = [
+    "Prefer google_calendar unless user says 'Apple Calendar'.",
+    "Never invent event IDs. To update/delete, list first to find the item.",
+]

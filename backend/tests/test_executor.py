@@ -14,7 +14,7 @@ async def test_server_tool_execution(sample_plan, tool_context, monkeypatch):
         called_with.update(args)
         return {"event_id": "new123", "html_link": "https://cal/new123", "event": {}}
 
-    import app.tools.google_calendar as gcal_tools
+    import app.tools.skills.calendar.google_calendar as gcal_tools
 
     monkeypatch.setattr(gcal_tools.CreateEventTool, "execute", fake_execute)
 
@@ -48,7 +48,7 @@ async def test_idempotency_skips_duplicate(sample_plan, tool_context, monkeypatc
         call_count += 1
         return {"event_id": "e1"}
 
-    import app.tools.google_calendar as gcal_tools
+    import app.tools.skills.calendar.google_calendar as gcal_tools
 
     monkeypatch.setattr(gcal_tools.CreateEventTool, "execute", fake_execute)
 
@@ -87,7 +87,7 @@ async def test_execute_confirmed_runs_all(tool_context, monkeypatch):
     async def fake_delete(self, args, context):
         return {"deleted": True}
 
-    import app.tools.google_calendar as gcal_tools
+    import app.tools.skills.calendar.google_calendar as gcal_tools
 
     monkeypatch.setattr(gcal_tools.DeleteEventTool, "execute", fake_delete)
 

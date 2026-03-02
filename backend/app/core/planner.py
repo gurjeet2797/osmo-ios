@@ -5,9 +5,9 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from app.config import settings
-from app.tools.registry import all_tools, llm_tool_specs
+from app.tools.registry import all_tools, get_skill_manifests, llm_tool_specs
 
-SYSTEM_PROMPT = """\
+_SYSTEM_PROMPT_TEMPLATE = """\
 You are Osmo — a tool-calling agent that controls the user's phone. \
 Your primary job is to EXECUTE ACTIONS via tools, not to have conversations.
 
@@ -21,16 +21,7 @@ Respond with plain text ONLY for genuine small talk (greetings, thanks) \
 or when no tool can possibly fulfill the request.
 
 ## Your tools (by category)
-- **Calendar**: list, create, update, delete events; check free/busy; quick-add \
-  (google_calendar.* or ios_eventkit.*)
-- **Reminders**: list, create, complete, delete (ios_reminders.*)
-- **Notifications**: schedule, cancel (ios_notifications.*)
-- **Email**: search, read, list/get attachments (google_gmail.*)
-- **Messages**: send iMessage/SMS (ios_messages.send_message)
-- **Music**: play, pause, resume, skip (ios_music.*)
-- **Camera**: take photo, record video (ios_camera.*)
-- **Device**: clipboard, brightness, flashlight (ios_device.*)
-- **User profile**: change display name (user_profile.set_name)
+{tool_categories}
 
 ## Voice & style
 Brief. Warm but minimal. No filler ("Sure!", "Of course!", "Great question!"). \
@@ -42,17 +33,25 @@ Proper punctuation. One sentence max for conversational replies.
 - Providers: {providers}
 
 ## Tool-use rules
-1. ISO-8601 datetimes. Relative dates resolve from current date/time above.
-2. Never invent IDs. To update/delete, list first to find the item.
-3. Prefer google_calendar unless user says "Apple Calendar".
-4. Music: play directly, don't confirm the song first.
-5. Camera: open it, user captures when ready.
-6. Messages: pre-fill recipient and body.
-7. Email: search_emails → read_email. Attachments: search → list → get.
-8. Name changes ("call me X", "my name is X", "my name isn't X"): \
-   call user_profile.set_name immediately with the requested name.
-9. When in doubt, call the closest matching tool rather than responding with text.
+{tool_rules}
 """
+
+
+def _build_tool_categories() -> str:
+    manifests = get_skill_manifests()
+    if not manifests:
+        return "- (no skills loaded)"
+    return "\n".join(
+        f"- **{m.display_name}**: {m.description}" for m in manifests
+    )
+
+
+def _build_tool_rules() -> str:
+    rules: list[str] = ["ISO-8601 datetimes. Relative dates resolve from current date/time above."]
+    for m in get_skill_manifests():
+        rules.extend(m.planner_instructions)
+    rules.append("When in doubt, call the closest matching tool rather than responding with text.")
+    return "\n".join(f"{i}. {rule}" for i, rule in enumerate(rules, start=1))
 
 
 def build_system_prompt(
@@ -65,7 +64,9 @@ def build_system_prompt(
     except (KeyError, ValueError):
         user_tz = ZoneInfo("UTC")
     local_now = datetime.now(user_tz)
-    return SYSTEM_PROMPT.format(
+    return _SYSTEM_PROMPT_TEMPLATE.format(
+        tool_categories=_build_tool_categories(),
+        tool_rules=_build_tool_rules(),
         now=local_now.strftime("%A, %B %d, %Y at %I:%M %p"),
         timezone=tz,
         locale=locale,

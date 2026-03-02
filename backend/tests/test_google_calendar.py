@@ -2,8 +2,8 @@
 
 import pytest
 
-import app.tools.google_calendar  # noqa: F401 — register tools
-import app.tools.ios_eventkit  # noqa: F401 — register tools
+import app.tools.skills.calendar.google_calendar  # noqa: F401 — register tools
+import app.tools.skills.calendar.ios_eventkit  # noqa: F401 — register tools
 from app.tools.base import ToolContext
 from app.tools.registry import get_tool
 
@@ -62,7 +62,7 @@ async def test_google_list_events_calls_connector(monkeypatch):
         def list_events(self, **kwargs):
             return events_returned
 
-    import app.tools.google_calendar as mod
+    import app.tools.skills.calendar.google_calendar as mod
 
     monkeypatch.setattr(mod, "GoogleCalendarClient", lambda creds: FakeClient())
 
@@ -84,7 +84,7 @@ async def test_google_create_event_calls_connector(monkeypatch):
         def create_event(self, **kwargs):
             return created
 
-    import app.tools.google_calendar as mod
+    import app.tools.skills.calendar.google_calendar as mod
 
     monkeypatch.setattr(mod, "GoogleCalendarClient", lambda creds: FakeClient())
 

@@ -1,0 +1,8 @@
+[skill]
+name = "email"
+display_name = "Email"
+description = "search, read, list/get attachments (google_gmail.*)"
+tool_modules = ["google_gmail"]
+planner_instructions = [
+    "Email: search_emails -> read_email. Attachments: search -> list -> get.",
+]

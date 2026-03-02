@@ -1,0 +1,6 @@
+[skill]
+name = "device"
+display_name = "Device"
+description = "clipboard, brightness, flashlight (ios_device.*)"
+tool_modules = ["ios_device"]
+planner_instructions = []

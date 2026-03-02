@@ -1,0 +1,8 @@
+[skill]
+name = "messages"
+display_name = "Messages"
+description = "send iMessage/SMS (ios_messages.send_message)"
+tool_modules = ["ios_messages"]
+planner_instructions = [
+    "Pre-fill recipient and body.",
+]

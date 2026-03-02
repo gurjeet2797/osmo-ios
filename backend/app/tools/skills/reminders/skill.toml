@@ -1,0 +1,6 @@
+[skill]
+name = "reminders"
+display_name = "Reminders"
+description = "list, create, complete, delete (ios_reminders.*)"
+tool_modules = ["ios_reminders"]
+planner_instructions = []

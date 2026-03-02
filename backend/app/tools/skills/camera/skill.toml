@@ -1,0 +1,8 @@
+[skill]
+name = "camera"
+display_name = "Camera"
+description = "take photo, record video (ios_camera.*)"
+tool_modules = ["ios_camera"]
+planner_instructions = [
+    "Open it, user captures when ready.",
+]

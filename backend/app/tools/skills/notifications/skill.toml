@@ -1,0 +1,6 @@
+[skill]
+name = "notifications"
+display_name = "Notifications"
+description = "schedule, cancel (ios_notifications.*)"
+tool_modules = ["ios_notifications"]
+planner_instructions = []

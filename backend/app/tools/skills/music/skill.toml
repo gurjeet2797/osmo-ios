@@ -1,0 +1,8 @@
+[skill]
+name = "music"
+display_name = "Music"
+description = "play, pause, resume, skip (ios_music.*)"
+tool_modules = ["ios_music"]
+planner_instructions = [
+    "Play directly, don't confirm the song first.",
+]

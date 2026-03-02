@@ -7,18 +7,9 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import app.tools.google_calendar  # noqa: F401 — register tools
-import app.tools.ios_eventkit  # noqa: F401 — register tools
-import app.tools.ios_reminders  # noqa: F401 — register tools
-import app.tools.ios_notifications  # noqa: F401 — register tools
-import app.tools.ios_device  # noqa: F401 — register tools
-import app.tools.ios_camera  # noqa: F401 — register tools
-import app.tools.ios_messages  # noqa: F401 — register tools
-import app.tools.ios_music  # noqa: F401 — register tools
-import app.tools.google_gmail  # noqa: F401 — register tools
-import app.tools.user_profile  # noqa: F401 — register tools
 from app.config import settings
 from app.connectors.google_calendar import credentials_from_encrypted
+from app.tools.loader import discover_and_load_skills
 from app.connectors.llm import LLMResponse, ToolCall, create_llm_client
 from app.core.executor import Executor
 from app.core.planner import _from_api_name, _to_api_name, build_tools, build_system_prompt
@@ -40,6 +31,8 @@ from app.schemas.command import (
 from app.tools.base import ToolContext
 
 log = structlog.get_logger()
+
+discover_and_load_skills()
 
 router = APIRouter()
 

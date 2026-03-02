@@ -1,0 +1,8 @@
+[skill]
+name = "user_profile"
+display_name = "User profile"
+description = "change display name (user_profile.set_name)"
+tool_modules = ["user_profile"]
+planner_instructions = [
+    "Name changes ('call me X', 'my name is X', 'my name isn't X'): call user_profile.set_name immediately with the requested name.",
+]

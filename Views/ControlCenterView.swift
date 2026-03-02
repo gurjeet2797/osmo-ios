@@ -10,6 +10,7 @@ struct ControlCenterView: View {
     enum Tab: String, CaseIterable {
         case calendar = "Calendar"
         case commute = "Commute"
+        case settings = "Settings"
     }
 
     var body: some View {
@@ -50,6 +51,8 @@ struct ControlCenterView: View {
                 calendarContent
             case .commute:
                 commuteContent
+            case .settings:
+                settingsContent
             }
 
             Spacer()
@@ -241,6 +244,49 @@ struct ControlCenterView: View {
             Text("Coming soon")
                 .font(.system(size: 13, weight: .light, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.25))
+            Spacer()
+        }
+    }
+
+    // MARK: - Settings Content
+
+    private var settingsContent: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 0) {
+                HStack(spacing: 14) {
+                    Image(systemName: "waveform.circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.white.opacity(0.6))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Wake Word")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.85))
+                        Text("Say \"Osmo\" to start listening")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.isWakeWordEnabled },
+                        set: { viewModel.toggleWakeWord($0) }
+                    ))
+                    .labelsHidden()
+                    .tint(.white.opacity(0.4))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.white.opacity(0.05))
+                    .stroke(.white.opacity(0.06), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
             Spacer()
         }
     }

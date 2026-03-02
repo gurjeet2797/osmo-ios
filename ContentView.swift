@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel = AppViewModel()
 
     var body: some View {
@@ -79,6 +80,17 @@ struct ContentView: View {
                 viewModel.fetchSuggestions()
                 viewModel.fetchBriefing()
                 LocationManager.shared.requestPermissionAndStart()
+                viewModel.setupWakeWordDetection()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .active:
+                    viewModel.resumeWakeWordIfNeeded()
+                case .inactive, .background:
+                    viewModel.wakeWordDetector.pause()
+                @unknown default:
+                    break
+                }
             }
     }
 }

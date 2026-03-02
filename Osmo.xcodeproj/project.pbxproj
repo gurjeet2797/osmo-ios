@@ -39,6 +39,7 @@
 		B0BDB3D03D9569E043945BB0 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31106D9294FE8C82E44CF50 /* APIConfig.swift */; };
 		B14CD232D1F7C3CB2D54BDDF /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */; };
 		B47217E1DCB548838720EE68 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B312AA2D973B69BA1031CA81 /* NotificationManager.swift */; };
+		B60C7C7933BCF041DBF7A21C /* WakeWordDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE5FA54708E27A54B6AEFC80 /* WakeWordDetector.swift */; };
 		B6A68D5D1590B3CC04FA9337 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599D3CE1B85FABA8FEE44559 /* AuthManager.swift */; };
 		C8D4DDE05C8D37FE1DF57876 /* NavigationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */; };
 		CC95ECAE3851145DA330787A /* DeviceControlManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */; };
@@ -90,6 +91,7 @@
 		D690CC2367382FF811FE079C /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		E3EDFD147322D940BEF91486 /* ParticleStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleStateMachine.swift; sourceTree = "<group>"; };
 		E94FC738C2C511D6BA4418E3 /* ParticleOrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleOrbView.swift; sourceTree = "<group>"; };
+		EE5FA54708E27A54B6AEFC80 /* WakeWordDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeWordDetector.swift; sourceTree = "<group>"; };
 		F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySheetView.swift; sourceTree = "<group>"; };
 		F3C135F6E4625A50CB945D14 /* MorphController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorphController.swift; sourceTree = "<group>"; };
 		F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSheetView.swift; sourceTree = "<group>"; };
@@ -176,6 +178,7 @@
 				A3035168BA6F31D4AE099C2E /* ReminderManager.swift */,
 				F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */,
 				13CFAA37F6590C24637D5F91 /* TranslationManager.swift */,
+				EE5FA54708E27A54B6AEFC80 /* WakeWordDetector.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -319,6 +322,7 @@
 				A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */,
 				55D01A7BEEC5ADF5127A3180 /* SpeechRecognizer.swift in Sources */,
 				2DB7C77BE85BD16E889CA4CF /* TranslationManager.swift in Sources */,
+				B60C7C7933BCF041DBF7A21C /* WakeWordDetector.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

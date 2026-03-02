@@ -258,13 +258,29 @@ async def handle_command(
         sm = SessionManager(db, str(user.id))
         session_messages = await sm.load()
 
-    # 2. Ask the LLM
-    response = await llm.chat(
-        system_prompt,
-        body.transcript,
-        tools,
-        messages=session_messages if use_anthropic else None,
-    )
+    # 2. Ask the LLM (with session recovery on corrupted history)
+    try:
+        response = await llm.chat(
+            system_prompt,
+            body.transcript,
+            tools,
+            messages=session_messages if use_anthropic else None,
+        )
+    except Exception as chat_err:
+        # If session history is corrupted (e.g. dangling tool_use without tool_result),
+        # clear it and retry with a fresh session.
+        if use_anthropic and sm and "tool_use" in str(chat_err):
+            log.warning("session.corrupted, clearing and retrying", error=str(chat_err))
+            await sm.clear()
+            session_messages = []
+            response = await llm.chat(
+                system_prompt,
+                body.transcript,
+                tools,
+                messages=session_messages,
+            )
+        else:
+            raise
 
     # Track messages for session persistence
     if use_anthropic:

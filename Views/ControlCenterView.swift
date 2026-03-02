@@ -3,6 +3,7 @@ import SwiftUI
 struct ControlCenterView: View {
     @Bindable var viewModel: AppViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(OnboardingManager.self) private var onboarding
 
     @State private var selectedTab: Tab = .calendar
     @State private var currentMonth = Date()
@@ -275,6 +276,48 @@ struct ControlCenterView: View {
                     ))
                     .labelsHidden()
                     .tint(.white.opacity(0.4))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.white.opacity(0.05))
+                    .stroke(.white.opacity(0.06), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
+            // Recalibrate voice button
+            Button {
+                dismiss()
+                // Small delay so sheet fully dismisses before overlay shows
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
+                    onboarding.startRecalibration()
+                }
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "waveform.badge.mic")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.white.opacity(0.6))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Recalibrate Voice")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.85))
+                        Text(VoiceCalibrator.hasCalibrated
+                            ? "Re-record how you say 'Osmo'"
+                            : "Teach Osmo your pronunciation")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.25))
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)

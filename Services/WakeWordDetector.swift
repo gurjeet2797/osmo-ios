@@ -30,12 +30,25 @@ nonisolated final class WakeWordDetector: @unchecked Sendable {
     /// Track whether we've been explicitly paused (for command recording coordination).
     private var isPaused: Bool = false
 
-    /// Variants of "Osmo" that the recognizer might produce.
-    private let wakeVariants: [String] = [
+    /// Default variants of "Osmo" that the recognizer might produce.
+    private let defaultVariants: [String] = [
         "osmo", "ozmo", "oz mo", "osmol", "ossmo",
         "cosmo", "osma", "asmo", "ozma", "oslo",
         "awesome", "os mo"
     ]
+
+    /// Merged user-calibrated + default variants, deduped. User variants first.
+    private var wakeVariants: [String] {
+        let userVariants = VoiceCalibrator.loadUserVariants()
+        var seen = Set<String>()
+        var merged: [String] = []
+        for v in userVariants + defaultVariants {
+            if seen.insert(v).inserted {
+                merged.append(v)
+            }
+        }
+        return merged
+    }
 
     init(locale: Locale = Locale(identifier: "en-US")) {
         self.speechRecognizer = SFSpeechRecognizer(locale: locale)

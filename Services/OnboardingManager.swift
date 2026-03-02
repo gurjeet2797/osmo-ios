@@ -7,6 +7,7 @@ final class OnboardingManager {
         case voiceFirst
         case connect
         case microphone
+        case wakeWord
         case calendar
         case done
     }
@@ -14,6 +15,16 @@ final class OnboardingManager {
     var currentStep: Step = .welcome
     var isActive: Bool { !hasCompleted }
     var stepOpacity: Double = 1.0
+
+    // MARK: - Calibration State
+
+    var calibrationSamples: [String] = []
+    var isRecordingSample: Bool = false
+    var calibrationComplete: Bool = false
+    var isRecalibrating: Bool = false
+
+    @ObservationIgnored
+    private var calibrator: VoiceCalibrator?
 
     /// 0.0 at welcome → 1.0 at done — drives orb growth
     var progress: CGFloat {
@@ -37,6 +48,7 @@ final class OnboardingManager {
         case .voiceFirst: return "your voice-first assistant"
         case .connect: return "let's connect"
         case .microphone: return "one more thing"
+        case .wakeWord: return "teach osmo your voice"
         case .calendar: return "apple calendar too?"
         case .done: return "you're all set"
         }
@@ -48,6 +60,7 @@ final class OnboardingManager {
         case .voiceFirst: return "speak naturally. osmo listens, plans, and acts."
         case .connect: return "sign in with google to unlock calendar & email"
         case .microphone: return "osmo needs your voice to understand you"
+        case .wakeWord: return "say 'osmo' three times so we recognize you"
         case .calendar: return "optionally connect your on-device calendar for local events"
         case .done: return "tap the orb to begin"
         }
@@ -58,6 +71,7 @@ final class OnboardingManager {
         case .welcome, .voiceFirst: return "continue"
         case .connect: return "sign in with google"
         case .microphone: return "enable microphone"
+        case .wakeWord: return nil
         case .calendar: return "enable apple calendar"
         case .done: return nil
         }
@@ -66,7 +80,7 @@ final class OnboardingManager {
     /// Secondary action label — shown alongside the primary button for skippable steps.
     var skipLabel: String? {
         switch currentStep {
-        case .calendar: return "skip"
+        case .wakeWord, .calendar: return "skip"
         default: return nil
         }
     }
@@ -114,4 +128,68 @@ final class OnboardingManager {
             self.hasCompleted = true
         }
     }
+
+    // MARK: - Voice Calibration
+
+    func recordCalibrationSample() {
+        guard !isRecordingSample, calibrationSamples.count < 3 else { return }
+        isRecordingSample = true
+
+        if calibrator == nil {
+            calibrator = VoiceCalibrator()
+        }
+
+        Task { @MainActor in
+            do {
+                let transcription = try await _recordCalibrationSample(calibrator: calibrator!)
+                if !transcription.isEmpty {
+                    calibrationSamples.append(transcription)
+                }
+                if calibrationSamples.count >= 3 {
+                    calibrationComplete = true
+                }
+            } catch {
+                // Silently handle — user can retry
+            }
+            isRecordingSample = false
+        }
+    }
+
+    func finalizeCalibration() {
+        let unique = Array(Set(calibrationSamples))
+        VoiceCalibrator.saveUserVariants(unique)
+        calibrator?.cancel()
+        calibrator = nil
+    }
+
+    func startRecalibration() {
+        calibrationSamples = []
+        calibrationComplete = false
+        isRecalibrating = true
+    }
+
+    func finishRecalibration() {
+        finalizeCalibration()
+        isRecalibrating = false
+    }
+
+    func cancelRecalibration() {
+        calibrator?.cancel()
+        calibrator = nil
+        calibrationSamples = []
+        calibrationComplete = false
+        isRecalibrating = false
+    }
+
+    func resetCalibrationState() {
+        calibrationSamples = []
+        calibrationComplete = false
+        calibrator?.cancel()
+        calibrator = nil
+    }
+}
+
+/// Runs calibration recording outside @MainActor to avoid dispatch_assert_queue issues.
+nonisolated private func _recordCalibrationSample(calibrator: VoiceCalibrator) async throws -> String {
+    try await calibrator.recordSample()
 }

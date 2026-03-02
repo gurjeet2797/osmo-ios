@@ -80,6 +80,8 @@ targets:
         group: Services
       - path: Services/SpeechRecognizer.swift
         group: Services
+      - path: Services/VoiceCalibrator.swift
+        group: Services
       - path: Services/WakeWordDetector.swift
         group: Services
       - path: Services/ReminderManager.swift

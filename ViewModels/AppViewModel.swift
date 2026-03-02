@@ -319,6 +319,8 @@ final class AppViewModel {
         responseDismissTask?.cancel()
         typewriterTask?.cancel()
         silenceTimer?.cancel()
+        // Clear server-side session so LLM starts fresh
+        Task { try? await apiClient.clearSession() }
         silenceTimer = nil
         orbPhase = .idle
         speechRecognizer.stopRecording()

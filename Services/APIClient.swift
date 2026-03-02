@@ -77,6 +77,12 @@ final class APIClient: Sendable {
         return response.events
     }
 
+    // MARK: - Session
+
+    func clearSession() async throws {
+        let _: [String: AnyCodable] = try await post(path: "/command/session/clear", body: Empty?.none)
+    }
+
     // MARK: - Health
 
     func healthCheck() async throws -> Bool {

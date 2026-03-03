@@ -14,6 +14,8 @@ from app.connectors.google_calendar import credentials_from_encrypted
 from app.tools.loader import discover_and_load_skills
 from app.connectors.llm import LLMResponse, ToolCall, create_llm_client
 from app.core.executor import Executor
+from app.core.openclaw_client import openclaw_client
+from app.core.openclaw_task_router import should_delegate_to_openclaw
 from app.core.planner import _from_api_name, _to_api_name, build_tools, build_system_prompt
 from app.core.policy import evaluate
 from app.core.preference_manager import PreferenceManager
@@ -256,6 +258,28 @@ async def handle_command(
     )
     tools = build_tools()
     use_anthropic = settings.llm_provider == "anthropic"
+
+    # 0. OpenClaw delegation — for complex/multi-step/memory tasks (opt-in)
+    if settings.openclaw_enabled and await should_delegate_to_openclaw(body.transcript):
+        context_meta = {
+            "user_id": str(user.id),
+            "timezone": body.timezone,
+            "locale": body.locale,
+            "providers": ", ".join(body.linked_providers or []),
+        }
+        oc_response = await openclaw_client.send_message(
+            text=body.transcript,
+            session_id=f"osmo-{user.id}",
+            context=context_meta,
+        )
+        if oc_response:
+            log.info("openclaw.delegated", user_id=str(user.id), transcript=body.transcript[:80])
+            await _record_command(db, user, body, ["openclaw"])
+            return CommandResponse(
+                spoken_response=oc_response,
+                requires_confirmation=False,
+            )
+        # Fall through to local planner if OpenClaw returned None
 
     # 1. Load session history (both providers now use sessions)
     sm = SessionManager(db, str(user.id))

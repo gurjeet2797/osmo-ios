@@ -47,5 +47,12 @@ class Settings(BaseSettings):
     environment: str = "development"
     allowed_origins: str = ""
 
+    # ---------------------------------------------------------------------------
+    # OpenClaw integration (opt-in — set OPENCLAW_ENABLED=true to activate)
+    # ---------------------------------------------------------------------------
+    openclaw_enabled: bool = False
+    openclaw_url: str = "http://localhost:18790"
+    openclaw_token: str = ""
+
 
 settings = Settings()

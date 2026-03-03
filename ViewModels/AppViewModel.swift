@@ -1,6 +1,8 @@
+import CoreLocation
 import SwiftUI
 import UIKit
 import Translation
+import WeatherKit
 
 @Observable
 final class AppViewModel {
@@ -60,6 +62,13 @@ final class AppViewModel {
     // Subscription
     var subscriptionTier: String = "free"
     var remainingRequests: Int?
+
+    // Weather
+    var weatherText: String?  // e.g. "72° Sunny"
+    var weatherIcon: String?  // SF Symbol name
+    var weatherTemp: String?  // e.g. "72°"
+    var weatherCondition: String?  // e.g. "Sunny"
+    var weatherLocation: String?  // e.g. "San Francisco"
 
     // Widget data
     var emailWidgetData: EmailWidgetData?
@@ -161,6 +170,49 @@ final class AppViewModel {
             } catch {
                 // Silently fail — widgets show placeholder
             }
+        }
+    }
+
+    // MARK: - Weather
+
+    func fetchWeather() {
+        Task {
+            guard let lat = LocationManager.shared.currentLatitude,
+                  let lng = LocationManager.shared.currentLongitude else {
+                // Retry once after a short delay for location to populate
+                try? await Task.sleep(for: .seconds(2))
+                guard let lat = LocationManager.shared.currentLatitude,
+                      let lng = LocationManager.shared.currentLongitude else { return }
+                await _loadWeather(lat: lat, lng: lng)
+                return
+            }
+            await _loadWeather(lat: lat, lng: lng)
+        }
+    }
+
+    private func _loadWeather(lat: Double, lng: Double) async {
+        do {
+            let location = CLLocation(latitude: lat, longitude: lng)
+            let weather = try await WeatherService.shared.weather(for: location)
+            let current = weather.currentWeather
+
+            let tempF = current.temperature.converted(to: .fahrenheit)
+            let temp = "\(Int(tempF.value))°"
+            let condition = current.condition.description
+
+            weatherTemp = temp
+            weatherCondition = condition
+            weatherText = "\(temp) \(condition)"
+            weatherIcon = current.symbolName
+
+            // Reverse geocode for city name
+            let geocoder = CLGeocoder()
+            if let placemarks = try? await geocoder.reverseGeocodeLocation(location),
+               let city = placemarks.first?.locality {
+                weatherLocation = city
+            }
+        } catch {
+            // Silently fail — weather is best-effort
         }
     }
 

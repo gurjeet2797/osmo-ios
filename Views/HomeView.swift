@@ -275,21 +275,55 @@ struct HomeView: View {
 
     @ViewBuilder
     private var normalContent: some View {
-        // Personalized greeting — fades away after first recording
+        // Weather or greeting — fades away after first recording
         if !viewModel.hasUsedRecording {
-            Text(greetingText)
-                .font(.system(size: 32, weight: .thin))
-                .tracking(4)
-                .foregroundStyle(.white.opacity(0.6))
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
+            if let temp = viewModel.weatherTemp {
+                // Weather display
+                VStack(spacing: 4) {
+                    HStack(spacing: 10) {
+                        if let icon = viewModel.weatherIcon {
+                            Image(systemName: icon)
+                                .font(.system(size: 28, weight: .thin))
+                                .foregroundStyle(.white.opacity(0.5))
+                                .symbolRenderingMode(.hierarchical)
+                        }
+                        Text(temp)
+                            .font(.system(size: 36, weight: .thin))
+                            .tracking(2)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    if let condition = viewModel.weatherCondition {
+                        Text(condition)
+                            .font(.system(size: 13, weight: .light))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    if let city = viewModel.weatherLocation {
+                        Text(city)
+                            .font(.system(size: 11, weight: .light, design: .monospaced))
+                            .tracking(1)
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                }
                 .padding(.horizontal, 32)
                 .opacity(titleOpacity)
                 .scaleEffect(titleScale)
                 .blur(radius: titleBlur)
-                .contentTransition(.opacity)
-                .animation(.easeInOut(duration: 0.6), value: greetingText)
                 .transition(.opacity)
+            } else {
+                Text(greetingText)
+                    .font(.system(size: 32, weight: .thin))
+                    .tracking(4)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .padding(.horizontal, 32)
+                    .opacity(titleOpacity)
+                    .scaleEffect(titleScale)
+                    .blur(radius: titleBlur)
+                    .contentTransition(.opacity)
+                    .animation(.easeInOut(duration: 0.6), value: greetingText)
+                    .transition(.opacity)
+            }
 
             // Divider line
             Rectangle()
@@ -452,7 +486,35 @@ struct HomeView: View {
                 widgetPlaceholder(icon: "car", text: "No commute data")
             }
         case .weather:
-            widgetPlaceholder(icon: "cloud.sun", text: "Weather — coming soon")
+            if let temp = viewModel.weatherTemp, let condition = viewModel.weatherCondition {
+                HStack(spacing: 8) {
+                    if let icon = viewModel.weatherIcon {
+                        Image(systemName: icon)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    Text("\(temp) \(condition)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.7))
+                    if let city = viewModel.weatherLocation {
+                        Spacer()
+                        Text(city)
+                            .font(.system(size: 11, weight: .light))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.white.opacity(0.04))
+                        .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                )
+            } else {
+                widgetPlaceholder(icon: "cloud.sun", text: "Loading weather...")
+            }
         }
     }
 

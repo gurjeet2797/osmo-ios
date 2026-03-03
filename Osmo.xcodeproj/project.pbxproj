@@ -21,6 +21,7 @@
 		361587FF73FCF09C5A50CD3B /* HistorySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */; };
 		3FE2197DAE4F45391C055523 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE69FAFA54B83AFA3940D46 /* AppViewModel.swift */; };
 		40301D741747D2E76C0CDDF7 /* ControlCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */; };
+		431BAADE9785F403A897404A /* WeatherKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3163C9DE6155BABD4D864410 /* WeatherKit.framework */; };
 		4C88B8E6F1FBEC03575FA67A /* OsmoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E02648469DA9D702A95D2D /* OsmoApp.swift */; };
 		52293C8677AD35BF2D244856 /* GlassEffect+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3623EB850B8F6D6CD4077EA3 /* GlassEffect+Adaptive.swift */; };
 		5351D9269884D06930AA6179 /* MusicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E534BA14971270DC0FDBE08 /* MusicManager.swift */; };
@@ -64,6 +65,7 @@
 		13CFAA37F6590C24637D5F91 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
 		16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlManager.swift; sourceTree = "<group>"; };
 		179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlCenterView.swift; sourceTree = "<group>"; };
+		3163C9DE6155BABD4D864410 /* WeatherKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WeatherKit.framework; path = System/Library/Frameworks/WeatherKit.framework; sourceTree = SDKROOT; };
 		3623EB850B8F6D6CD4077EA3 /* GlassEffect+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GlassEffect+Adaptive.swift"; sourceTree = "<group>"; };
 		3C6699AA190E203DB7A4821B /* OnboardingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingManager.swift; sourceTree = "<group>"; };
 		4CFD7637A11D1054E56E4C87 /* EventKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitManager.swift; sourceTree = "<group>"; };
@@ -108,6 +110,17 @@
 		FAC8F5274C772D98F53DDB1A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FFAF6168133B3BFE8355BEDE /* MessageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		71C19F8966EFD8C77C3D6584 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				431BAADE9785F403A897404A /* WeatherKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		127E41FAC5523DC644CE9D68 /* ParticleOrb */ = {
@@ -167,6 +180,14 @@
 			path = Utilities;
 			sourceTree = "<group>";
 		};
+		84CDBEE5D08897DC4E538663 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3163C9DE6155BABD4D864410 /* WeatherKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		97B7E7886D63629DA9E297E7 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -208,6 +229,7 @@
 				773A824DC3308D9299B5848D /* Utilities */,
 				567EF2930A6FA165492BCCE0 /* ViewModels */,
 				4FF07C7FC7FDA716585D57E7 /* Views */,
+				84CDBEE5D08897DC4E538663 /* Frameworks */,
 				62F184ED1DFEEF99480C9A38 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -230,6 +252,7 @@
 			buildPhases = (
 				2DB92903CA4D59C45CD33EE8 /* Sources */,
 				59DEBF8281C314769EC1F54F /* Resources */,
+				71C19F8966EFD8C77C3D6584 /* Frameworks */,
 			);
 			buildRules = (
 			);

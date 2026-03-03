@@ -93,6 +93,7 @@ struct ContentView: View {
                 viewModel.fetchWidgetData()
                 viewModel.fetchSubscriptionStatus()
                 LocationManager.shared.requestPermissionAndStart()
+                viewModel.fetchWeather()
                 viewModel.checkForProactiveNotifications()
             }
             .task {
@@ -110,6 +111,7 @@ struct ContentView: View {
                     lastForegroundRefresh = now
                     viewModel.fetchUpcomingEvents()
                     viewModel.fetchWidgetData()
+                    viewModel.fetchWeather()
                     viewModel.checkForProactiveNotifications()
                 }
             }

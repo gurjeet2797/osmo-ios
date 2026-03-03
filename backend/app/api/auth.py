@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.session import get_db, get_redis
-from app.dependencies import create_access_token, get_fernet
+from app.dependencies import create_access_token, get_current_user, get_fernet
 from app.models.user import User
 
 log = structlog.get_logger()
@@ -194,3 +194,19 @@ async def google_callback(
         return RedirectResponse(url=f"osmo://auth/callback?{params}")
 
     return {"access_token": access_token, "token_type": "bearer", "email": email}
+
+
+@router.post("/device-token")
+async def register_device_token(
+    body: dict[str, str],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, str]:
+    """Register an APNs device token for push notifications."""
+    token = body.get("device_token", "").strip()
+    if not token or len(token) > 128:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid device token")
+    user.apns_device_token = token
+    await db.commit()
+    log.info("auth.device_token_registered", user_id=str(user.id))
+    return {"status": "ok"}

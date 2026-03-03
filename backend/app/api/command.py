@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Annotated, Any
 
 import structlog
@@ -44,7 +45,30 @@ discover_and_load_skills()
 
 router = APIRouter()
 
-_pending_plans: dict[str, tuple[ActionPlan, str, list[dict[str, Any]]]] = {}
+# Pending plans with timestamp for TTL cleanup
+_pending_plans: dict[str, tuple[ActionPlan, str, list[dict[str, Any]], float]] = {}
+_PLAN_TTL_SECONDS = 600  # 10 minutes
+
+# Cached tool specs (rebuilt once per process)
+_cached_tools: list[dict[str, Any]] | None = None
+
+
+def _get_tools() -> list[dict[str, Any]]:
+    """Return cached tool specs, building once per process."""
+    global _cached_tools
+    if _cached_tools is None:
+        _cached_tools = build_tools()
+    return _cached_tools
+
+
+def _cleanup_expired_plans() -> None:
+    """Remove plans older than TTL."""
+    now = time.monotonic()
+    expired = [pid for pid, (_, _, _, ts) in _pending_plans.items() if now - ts > _PLAN_TTL_SECONDS]
+    for pid in expired:
+        _pending_plans.pop(pid, None)
+    if expired:
+        log.info("plans.cleanup", expired_count=len(expired))
 
 
 async def _count_today_commands(db: AsyncSession, user_id: str) -> int:
@@ -290,8 +314,11 @@ async def handle_command(
         latitude=body.latitude, longitude=body.longitude,
         user_preferences=pref_block,
     )
-    tools = build_tools()
+    tools = _get_tools()
     use_anthropic = settings.llm_provider == "anthropic"
+
+    # Cleanup expired pending plans on each request
+    _cleanup_expired_plans()
 
     # 0. OpenClaw delegation — for complex/multi-step/memory tasks (opt-in)
     if settings.openclaw_enabled:
@@ -421,7 +448,7 @@ async def handle_command(
 
     # 6. Confirmation check
     if plan.needs_confirmation:
-        _pending_plans[plan.plan_id] = (plan, str(user.id), session_messages)
+        _pending_plans[plan.plan_id] = (plan, str(user.id), session_messages, time.monotonic())
 
         phrases = [
             s.confirmation_phrase
@@ -493,9 +520,9 @@ async def confirm_plan(
 ):
     entry = _pending_plans.pop(body.plan_id, None)
     if entry is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan not found or already executed")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Plan not found or expired")
 
-    plan, owner_id, session_messages = entry
+    plan, owner_id, session_messages, _created_at = entry
     if owner_id != str(user.id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Plan belongs to another user")
 
@@ -517,7 +544,7 @@ async def confirm_plan(
     llm = create_llm_client()
     providers = ["google_calendar"]
     system_prompt = build_system_prompt(context.timezone, "en-US", providers)
-    tools = build_tools()
+    tools = _get_tools()
     use_anthropic = settings.llm_provider == "anthropic"
 
     # Reconstruct tool calls from plan steps

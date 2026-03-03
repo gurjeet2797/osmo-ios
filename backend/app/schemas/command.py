@@ -7,16 +7,17 @@ from app.schemas.device import DeviceAction, DeviceActionResult
 
 
 class CommandRequest(BaseModel):
-    transcript: str = Field(..., min_length=1, description="Speech-to-text transcript")
-    timezone: str = "UTC"
-    locale: str = "en-US"
+    transcript: str = Field(..., min_length=1, max_length=5000, description="Speech-to-text transcript")
+    timezone: str = Field(default="UTC", max_length=64)
+    locale: str = Field(default="en-US", max_length=16)
     linked_providers: list[str] = Field(
         default_factory=lambda: ["google_calendar"],
         description="Linked calendar providers, e.g. google_calendar, ios_eventkit",
+        max_length=10,
     )
-    latitude: float | None = None
-    longitude: float | None = None
-    image_data: str | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    image_data: str | None = Field(default=None, max_length=7_000_000, description="Base64 JPEG, max ~5MB")
 
 
 class Attachment(BaseModel):

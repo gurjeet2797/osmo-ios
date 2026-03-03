@@ -68,8 +68,12 @@ class BaseLLMClient(ABC):
 class AnthropicLLMClient(BaseLLMClient):
     def __init__(self) -> None:
         from anthropic import AsyncAnthropic
+        import httpx
 
-        self._client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        self._client = AsyncAnthropic(
+            api_key=settings.anthropic_api_key,
+            timeout=httpx.Timeout(60.0, connect=10.0),
+        )
         self._model = settings.anthropic_model
         self._max_tokens = settings.anthropic_max_tokens
 
@@ -179,8 +183,12 @@ class AnthropicLLMClient(BaseLLMClient):
 class OpenAILLMClient(BaseLLMClient):
     def __init__(self) -> None:
         from openai import AsyncOpenAI
+        import httpx
 
-        self._client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self._client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            timeout=httpx.Timeout(60.0, connect=10.0),
+        )
         self._model = settings.openai_model
 
     async def chat(
@@ -285,8 +293,15 @@ class OpenAILLMClient(BaseLLMClient):
 # Factory
 # ---------------------------------------------------------------------------
 
+_llm_client: BaseLLMClient | None = None
+
+
 def create_llm_client() -> BaseLLMClient:
-    """Create an LLM client based on the configured provider."""
-    if settings.llm_provider == "anthropic":
-        return AnthropicLLMClient()
-    return OpenAILLMClient()
+    """Return a singleton LLM client based on the configured provider."""
+    global _llm_client
+    if _llm_client is None:
+        if settings.llm_provider == "anthropic":
+            _llm_client = AnthropicLLMClient()
+        else:
+            _llm_client = OpenAILLMClient()
+    return _llm_client

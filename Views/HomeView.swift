@@ -7,6 +7,7 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(OnboardingManager.self) private var onboarding
 
+    @State private var showFAQ = false
     @State private var titleOpacity: Double = 0
     @State private var titleScale: CGFloat = 0.88
     @State private var titleBlur: CGFloat = 8
@@ -42,6 +43,11 @@ struct HomeView: View {
                             Menu {
                                 if let email = authManager.userEmail {
                                     Text(email)
+                                }
+                                Button {
+                                    showFAQ = true
+                                } label: {
+                                    Label("What Can Osmo Do?", systemImage: "questionmark.circle")
                                 }
                                 Button("Sign Out", role: .destructive) {
                                     authManager.signOut()
@@ -151,6 +157,9 @@ struct HomeView: View {
             }
             .padding(.bottom, 16)
             .ignoresSafeArea(edges: .bottom)
+        }
+        .sheet(isPresented: $showFAQ) {
+            FAQView()
         }
         .onAppear {
             runEntrance()

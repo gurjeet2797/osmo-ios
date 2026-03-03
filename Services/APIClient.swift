@@ -29,9 +29,16 @@ final class APIClient: Sendable {
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
-    init(baseURL: URL = APIConfig.baseURL, session: URLSession = .shared) {
+    init(baseURL: URL = APIConfig.baseURL, session: URLSession? = nil) {
         self.baseURL = baseURL
-        self.session = session
+        if let session {
+            self.session = session
+        } else {
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 30
+            config.timeoutIntervalForResource = 120
+            self.session = URLSession(configuration: config)
+        }
         self.decoder = JSONDecoder()
         self.encoder = JSONEncoder()
     }
@@ -121,6 +128,12 @@ final class APIClient: Sendable {
     func verifyReceipt(transactionId: String) async throws -> [String: AnyCodable] {
         let body = VerifyReceiptRequest(transactionId: transactionId)
         return try await post(path: "/subscription/verify", body: body)
+    }
+
+    // MARK: - Push Notifications
+
+    func registerDeviceToken(_ token: String) async throws {
+        let _: [String: AnyCodable] = try await post(path: "/auth/device-token", body: ["device_token": token])
     }
 
     // MARK: - Widgets

@@ -37,12 +37,14 @@
 		8633967B4905BBE164CC285B /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D690CC2367382FF811FE079C /* MarkdownContentView.swift */; };
 		876D1019461605B4BE3E0171 /* AttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F6F514E969611063FF479B /* AttachmentView.swift */; };
 		8827B44A1C89798A2723CE69 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757907DC128FB4316562DA6D /* Message.swift */; };
+		9953E08E539E2B0821126720 /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B44728D383B940A5CEA526C /* FAQView.swift */; };
 		9F128F8E0A4070B665220FBB /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1146B7AF8E8B6F26590F5D2 /* PaywallView.swift */; };
 		A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A297F421B69C1618A8BEB43E /* ShapeLibrary.swift */; };
 		B0BDB3D03D9569E043945BB0 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31106D9294FE8C82E44CF50 /* APIConfig.swift */; };
 		B14CD232D1F7C3CB2D54BDDF /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */; };
 		B47217E1DCB548838720EE68 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B312AA2D973B69BA1031CA81 /* NotificationManager.swift */; };
 		B6A68D5D1590B3CC04FA9337 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599D3CE1B85FABA8FEE44559 /* AuthManager.swift */; };
+		C65CB49B14F7BC1486C0381B /* PushNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A84F00581FCCD5B6714A0C2 /* PushNotificationDelegate.swift */; };
 		C8D4DDE05C8D37FE1DF57876 /* NavigationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */; };
 		CC95ECAE3851145DA330787A /* DeviceControlManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */; };
 		CE2120E099E3C56FE0F47ACF /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680B1ACDDB1A494AE71E8891 /* MarkdownParser.swift */; };
@@ -57,6 +59,7 @@
 
 /* Begin PBXFileReference section */
 		04A345F4A8931DC8F0F314CC /* AppLauncherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLauncherManager.swift; sourceTree = "<group>"; };
+		0B44728D383B940A5CEA526C /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
 		11146FB7215F331A4ADB516B /* ConversationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationStore.swift; sourceTree = "<group>"; };
 		13CFAA37F6590C24637D5F91 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
 		16A6C53256F1942D05F8AB17 /* DeviceControlManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlManager.swift; sourceTree = "<group>"; };
@@ -74,6 +77,7 @@
 		773790D4B39DE75EDAB61B66 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationManager.swift; sourceTree = "<group>"; };
 		86790E23687B289FF4B08F07 /* MediaManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaManager.swift; sourceTree = "<group>"; };
+		8A84F00581FCCD5B6714A0C2 /* PushNotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationDelegate.swift; sourceTree = "<group>"; };
 		96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmicBackground.swift; sourceTree = "<group>"; };
 		9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationBannerView.swift; sourceTree = "<group>"; };
 		A138E4990A458FDBE5DD37DA /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
@@ -128,6 +132,7 @@
 				9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */,
 				179ECAE7BB238BB7A5D2FAB2 /* ControlCenterView.swift */,
 				96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */,
+				0B44728D383B940A5CEA526C /* FAQView.swift */,
 				F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */,
 				AA06BD67A956492DFBC11DF6 /* HomeView.swift */,
 				D690CC2367382FF811FE079C /* MarkdownContentView.swift */,
@@ -181,6 +186,7 @@
 				85D13D0FD067CCDF9F93AE19 /* NavigationManager.swift */,
 				B312AA2D973B69BA1031CA81 /* NotificationManager.swift */,
 				3C6699AA190E203DB7A4821B /* OnboardingManager.swift */,
+				8A84F00581FCCD5B6714A0C2 /* PushNotificationDelegate.swift */,
 				A3035168BA6F31D4AE099C2E /* ReminderManager.swift */,
 				F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */,
 				A138E4990A458FDBE5DD37DA /* SubscriptionManager.swift */,
@@ -302,6 +308,7 @@
 				F1884971A1FE34381F70751C /* CosmicBackground.swift in Sources */,
 				CC95ECAE3851145DA330787A /* DeviceControlManager.swift in Sources */,
 				FC70D79AE8850316106AA4D4 /* EventKitManager.swift in Sources */,
+				9953E08E539E2B0821126720 /* FAQView.swift in Sources */,
 				52293C8677AD35BF2D244856 /* GlassEffect+Adaptive.swift in Sources */,
 				361587FF73FCF09C5A50CD3B /* HistorySheetView.swift in Sources */,
 				3254A486659C2B2C40ECD12C /* HomeView.swift in Sources */,
@@ -324,6 +331,7 @@
 				083165F95B850576E3BD5AF9 /* ParticleStateMachine.swift in Sources */,
 				5A91AD76795DAC248BF5ACF5 /* ParticleSystem.swift in Sources */,
 				9F128F8E0A4070B665220FBB /* PaywallView.swift in Sources */,
+				C65CB49B14F7BC1486C0381B /* PushNotificationDelegate.swift in Sources */,
 				57CD86BAB80B6F18E05432C6 /* ReminderManager.swift in Sources */,
 				10D9F6A190CDA02AFE77A5E2 /* Shaders.metal in Sources */,
 				A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */,
@@ -341,6 +349,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Osmo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -504,6 +513,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Osmo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;

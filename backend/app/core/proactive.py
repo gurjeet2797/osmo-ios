@@ -10,9 +10,11 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.connectors.apns import send_push_notification
 from app.db.session import async_session_factory
 from app.models.indexed_event import IndexedEvent
 from app.models.proactive_notification import ProactiveNotification
+from app.models.user import User
 
 log = structlog.get_logger()
 
@@ -56,8 +58,19 @@ async def generate_proactive_notifications() -> None:
 
         for user_id, user_events in by_user.items():
             try:
-                count = await _generate_for_user(db, user_events)
-                log.info("proactive.user_done", user_id=user_id, notifications=count)
+                notifications = await _generate_for_user(db, user_events)
+                log.info("proactive.user_done", user_id=user_id, notifications=len(notifications))
+
+                # Send push notifications via APNs
+                result = await db.execute(select(User).where(User.id == user_events[0].user_id))
+                user = result.scalar_one_or_none()
+                if user and user.apns_device_token:
+                    for n in notifications:
+                        await send_push_notification(
+                            user.apns_device_token,
+                            title=n["title"],
+                            body=n["body"],
+                        )
             except Exception:
                 log.warning("proactive.user_failed", user_id=user_id, exc_info=True)
 
@@ -66,9 +79,9 @@ async def generate_proactive_notifications() -> None:
     log.info("proactive.done")
 
 
-async def _generate_for_user(db: AsyncSession, events: list[IndexedEvent]) -> int:
-    """Generate notifications for a single user's upcoming events."""
-    count = 0
+async def _generate_for_user(db: AsyncSession, events: list[IndexedEvent]) -> list[dict]:
+    """Generate notifications for a single user's upcoming events. Returns list of {title, body} dicts."""
+    created: list[dict] = []
     for event in events:
         notification_data = await _generate_notification(event)
         if notification_data is None:
@@ -81,11 +94,14 @@ async def _generate_for_user(db: AsyncSession, events: list[IndexedEvent]) -> in
         if fire_at < now:
             fire_at = now  # Fire immediately if within 12 hours
 
+        title = notification_data.get("title", f"Upcoming: {event.title}")[:256]
+        body = notification_data.get("body", event.title)
+
         notification = ProactiveNotification(
             user_id=event.user_id,
             event_id=event.id,
-            title=notification_data.get("title", f"Upcoming: {event.title}")[:256],
-            body=notification_data.get("body", event.title),
+            title=title,
+            body=body,
             suggested_actions=notification_data.get("suggested_actions", []),
             fire_at=fire_at,
         )
@@ -93,9 +109,9 @@ async def _generate_for_user(db: AsyncSession, events: list[IndexedEvent]) -> in
 
         # Mark event as notified
         event.notified = True
-        count += 1
+        created.append({"title": title, "body": body})
 
-    return count
+    return created
 
 
 async def _generate_notification(event: IndexedEvent) -> dict | None:

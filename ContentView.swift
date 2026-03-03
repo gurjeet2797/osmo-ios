@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel = AppViewModel()
+    @State private var lastForegroundRefresh: Date = .distantPast
 
     var body: some View {
         HomeView(viewModel: viewModel)
@@ -103,6 +104,10 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
+                    // Debounce: skip if refreshed within last 5 minutes
+                    let now = Date()
+                    guard now.timeIntervalSince(lastForegroundRefresh) > 300 else { return }
+                    lastForegroundRefresh = now
                     viewModel.fetchUpcomingEvents()
                     viewModel.fetchWidgetData()
                     viewModel.checkForProactiveNotifications()

@@ -46,8 +46,16 @@ struct Message: Identifiable, Sendable, Codable {
 }
 
 struct Conversation: Identifiable, Sendable, Codable {
+    static let maxMessages = 100
+
     let id: UUID
-    var messages: [Message]
+    var messages: [Message] {
+        didSet {
+            if messages.count > Self.maxMessages {
+                messages = Array(messages.suffix(Self.maxMessages))
+            }
+        }
+    }
     let createdAt: Date
 
     init(id: UUID = UUID(), messages: [Message] = [], createdAt: Date = Date()) {

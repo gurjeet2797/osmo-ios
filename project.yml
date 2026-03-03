@@ -44,6 +44,8 @@ targets:
         group: Views
       - path: Views/VisionCameraView.swift
         group: Views
+      - path: Views/FAQView.swift
+        group: Views
       - path: Views/AttachmentView.swift
         group: Views
       - path: Views/MarkdownContentView.swift
@@ -112,6 +114,12 @@ targets:
         group: Services
       - path: Services/SubscriptionManager.swift
         group: Services
+      - path: Services/PushNotificationDelegate.swift
+        group: Services
+    entitlements:
+      path: Osmo.entitlements
+      properties:
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gurjeet.osmo

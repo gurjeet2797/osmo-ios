@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-5-20250929"
     anthropic_max_tokens: int = 4096
 
-    session_max_messages: int = 50
+    session_max_messages: int = 20
 
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -51,6 +51,14 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     allowed_origins: str = ""
+
+    # ---------------------------------------------------------------------------
+    # APNs (Apple Push Notifications) — set APNS_KEY_PATH to enable
+    # ---------------------------------------------------------------------------
+    apns_key_path: str = ""  # path to .p8 file from Apple Developer
+    apns_key_id: str = ""
+    apns_team_id: str = ""
+    apns_bundle_id: str = "com.gurjeet.osmo"
 
     # ---------------------------------------------------------------------------
     # OpenClaw integration (opt-in — set OPENCLAW_ENABLED=true to activate)

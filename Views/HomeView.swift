@@ -296,7 +296,7 @@ struct HomeView: View {
                 .transition(.opacity)
         }
 
-        // Subtitle area: LLM response (typewriter), briefing card, or rotating tips
+        // Subtitle area: LLM response (typewriter), widget cards, or rotating tips
         Group {
             if viewModel.lastSpokenResponse != nil {
                 Text(MarkdownParser.stripMarkdown(viewModel.displayedResponse))
@@ -309,19 +309,8 @@ struct HomeView: View {
                     .onTapGesture {
                         viewModel.showChat = true
                     }
-            } else if let briefing = viewModel.briefingText {
-                Text(briefing)
-                    .font(.system(size: 12, weight: .light))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(4)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(.white.opacity(0.04))
-                            .stroke(.white.opacity(0.08), lineWidth: 0.5)
-                    )
+            } else if !viewModel.homeWidgets.isEmpty {
+                homeWidgetStack
                     .transition(.opacity)
                     .onTapGesture {
                         viewModel.showChat = true
@@ -340,6 +329,141 @@ struct HomeView: View {
         .padding(.horizontal, 32)
         .frame(minHeight: 20)
         .animation(.easeInOut(duration: 0.4), value: viewModel.lastSpokenResponse == nil)
+    }
+
+    // MARK: - Home Widget Stack
+
+    @ViewBuilder
+    private var homeWidgetStack: some View {
+        VStack(spacing: 8) {
+            ForEach(viewModel.homeWidgets, id: \.self) { widget in
+                widgetCard(for: widget)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func widgetCard(for widget: HomeWidgetType) -> some View {
+        switch widget {
+        case .calendar:
+            if !viewModel.upcomingEvents.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(viewModel.upcomingEvents.prefix(2)) { event in
+                        HStack(spacing: 6) {
+                            Text(event.formattedTime)
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.4))
+                            Text(event.title)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.7))
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.white.opacity(0.04))
+                        .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                )
+            }
+        case .briefing:
+            if let briefing = viewModel.briefingText {
+                Text(briefing)
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.white.opacity(0.04))
+                            .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                    )
+            }
+        case .email:
+            if let email = viewModel.emailWidgetData, email.unreadCount > 0 {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "envelope.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.4))
+                        Text("\(email.unreadCount) unread")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                    ForEach(email.topEmails.prefix(2)) { preview in
+                        Text("\(preview.sender): \(preview.subject)")
+                            .font(.system(size: 12, weight: .light))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.white.opacity(0.04))
+                        .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                )
+            } else {
+                widgetPlaceholder(icon: "envelope", text: "No unread emails")
+            }
+        case .commute:
+            if let commute = viewModel.commuteWidgetData, let duration = commute.duration {
+                HStack(spacing: 8) {
+                    Image(systemName: "car.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.4))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(duration)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.7))
+                        if let dest = commute.destination {
+                            Text("to \(dest)")
+                                .font(.system(size: 11, weight: .light))
+                                .foregroundStyle(.white.opacity(0.4))
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.white.opacity(0.04))
+                        .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                )
+            } else {
+                widgetPlaceholder(icon: "car", text: "No commute data")
+            }
+        case .weather:
+            widgetPlaceholder(icon: "cloud.sun", text: "Weather — coming soon")
+        }
+    }
+
+    private func widgetPlaceholder(icon: String, text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundStyle(.white.opacity(0.3))
+            Text(text)
+                .font(.system(size: 11, weight: .light))
+                .foregroundStyle(.white.opacity(0.3))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(.white.opacity(0.03))
+                .stroke(.white.opacity(0.05), lineWidth: 0.5)
+        )
     }
 
     // MARK: - Onboarding Actions

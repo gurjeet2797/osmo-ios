@@ -13,6 +13,7 @@
 		18FE6F353011B91EB336F489 /* OnboardingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C6699AA190E203DB7A4821B /* OnboardingManager.swift */; };
 		1F5494E15874183479BDAC8F /* MediaManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86790E23687B289FF4B08F07 /* MediaManager.swift */; };
 		214B60FB3CC2BBAAF96282DA /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773790D4B39DE75EDAB61B66 /* APIClient.swift */; };
+		25AECB7E4FADBBCCA6B4A81E /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A138E4990A458FDBE5DD37DA /* SubscriptionManager.swift */; };
 		2A9970D6581EBF59F66DD165 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FAC8F5274C772D98F53DDB1A /* Assets.xcassets */; };
 		2CB724E081F62A2C85F6F46F /* ParticleShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = C804E97990E96D4491EF800B /* ParticleShape.swift */; };
 		2DB7C77BE85BD16E889CA4CF /* TranslationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13CFAA37F6590C24637D5F91 /* TranslationManager.swift */; };
@@ -32,9 +33,11 @@
 		69A8E9F29DE14BE5FFF41930 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85224002251DA1F00D5733E /* APIModels.swift */; };
 		6BDCA7114081AE577640975F /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C4045A79B132991EB9A915 /* KeychainHelper.swift */; };
 		6E260144D8AC86E30F2A58AB /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EBFF9997DE9F674438F849 /* CameraManager.swift */; };
+		72647770B00ED396E4C10887 /* VisionCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6994C353F5553A0D9F06768 /* VisionCameraView.swift */; };
 		8633967B4905BBE164CC285B /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D690CC2367382FF811FE079C /* MarkdownContentView.swift */; };
 		876D1019461605B4BE3E0171 /* AttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F6F514E969611063FF479B /* AttachmentView.swift */; };
 		8827B44A1C89798A2723CE69 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757907DC128FB4316562DA6D /* Message.swift */; };
+		9F128F8E0A4070B665220FBB /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1146B7AF8E8B6F26590F5D2 /* PaywallView.swift */; };
 		A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A297F421B69C1618A8BEB43E /* ShapeLibrary.swift */; };
 		B0BDB3D03D9569E043945BB0 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31106D9294FE8C82E44CF50 /* APIConfig.swift */; };
 		B14CD232D1F7C3CB2D54BDDF /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5222C4BD6D6A0202A7B44DB /* ChatSheetView.swift */; };
@@ -73,6 +76,7 @@
 		86790E23687B289FF4B08F07 /* MediaManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaManager.swift; sourceTree = "<group>"; };
 		96BEF2AC23C564E8FF4D340F /* CosmicBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmicBackground.swift; sourceTree = "<group>"; };
 		9CD69BAE992625864C9908CB /* ConfirmationBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationBannerView.swift; sourceTree = "<group>"; };
+		A138E4990A458FDBE5DD37DA /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		A297F421B69C1618A8BEB43E /* ShapeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeLibrary.swift; sourceTree = "<group>"; };
 		A3035168BA6F31D4AE099C2E /* ReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderManager.swift; sourceTree = "<group>"; };
 		A3E02648469DA9D702A95D2D /* OsmoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OsmoApp.swift; sourceTree = "<group>"; };
@@ -88,7 +92,9 @@
 		CD7CB94630F7D19BAC92E9EF /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		D670794EC81E29A26A97F0C7 /* ParticleSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleSystem.swift; sourceTree = "<group>"; };
 		D690CC2367382FF811FE079C /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
+		E1146B7AF8E8B6F26590F5D2 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		E3EDFD147322D940BEF91486 /* ParticleStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleStateMachine.swift; sourceTree = "<group>"; };
+		E6994C353F5553A0D9F06768 /* VisionCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionCameraView.swift; sourceTree = "<group>"; };
 		E94FC738C2C511D6BA4418E3 /* ParticleOrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleOrbView.swift; sourceTree = "<group>"; };
 		F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySheetView.swift; sourceTree = "<group>"; };
 		F3C135F6E4625A50CB945D14 /* MorphController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorphController.swift; sourceTree = "<group>"; };
@@ -125,6 +131,8 @@
 				F14AC18A8EB2C3B3644BBD30 /* HistorySheetView.swift */,
 				AA06BD67A956492DFBC11DF6 /* HomeView.swift */,
 				D690CC2367382FF811FE079C /* MarkdownContentView.swift */,
+				E1146B7AF8E8B6F26590F5D2 /* PaywallView.swift */,
+				E6994C353F5553A0D9F06768 /* VisionCameraView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -175,6 +183,7 @@
 				3C6699AA190E203DB7A4821B /* OnboardingManager.swift */,
 				A3035168BA6F31D4AE099C2E /* ReminderManager.swift */,
 				F60AE1EC5ACD00F36791D6EE /* SpeechRecognizer.swift */,
+				A138E4990A458FDBE5DD37DA /* SubscriptionManager.swift */,
 				13CFAA37F6590C24637D5F91 /* TranslationManager.swift */,
 			);
 			path = Services;
@@ -314,11 +323,14 @@
 				2CB724E081F62A2C85F6F46F /* ParticleShape.swift in Sources */,
 				083165F95B850576E3BD5AF9 /* ParticleStateMachine.swift in Sources */,
 				5A91AD76795DAC248BF5ACF5 /* ParticleSystem.swift in Sources */,
+				9F128F8E0A4070B665220FBB /* PaywallView.swift in Sources */,
 				57CD86BAB80B6F18E05432C6 /* ReminderManager.swift in Sources */,
 				10D9F6A190CDA02AFE77A5E2 /* Shaders.metal in Sources */,
 				A53D9D25C87F575463731F63 /* ShapeLibrary.swift in Sources */,
 				55D01A7BEEC5ADF5127A3180 /* SpeechRecognizer.swift in Sources */,
+				25AECB7E4FADBBCCA6B4A81E /* SubscriptionManager.swift in Sources */,
 				2DB7C77BE85BD16E889CA4CF /* TranslationManager.swift in Sources */,
+				72647770B00ED396E4C10887 /* VisionCameraView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

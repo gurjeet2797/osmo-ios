@@ -17,6 +17,15 @@ struct ContentView: View {
             .sheet(isPresented: $viewModel.showControlCenter) {
                 ControlCenterView(viewModel: viewModel)
             }
+            .sheet(isPresented: $viewModel.showPaywall) {
+                PaywallView()
+            }
+            .fullScreenCover(isPresented: $viewModel.showVisionCamera) {
+                VisionCameraView { image in
+                    viewModel.onPhotoCaptured(image)
+                }
+                .ignoresSafeArea()
+            }
             .fullScreenCover(item: $viewModel.pendingCameraAction) { action in
                 CameraView(action: action) {
                     viewModel.pendingCameraAction = nil
@@ -79,6 +88,9 @@ struct ContentView: View {
                 viewModel.addGreetingIfNeeded()
                 viewModel.fetchSuggestions()
                 viewModel.fetchBriefing()
+                viewModel.fetchPreferences()
+                viewModel.fetchWidgetData()
+                viewModel.fetchSubscriptionStatus()
                 LocationManager.shared.requestPermissionAndStart()
                 viewModel.checkForProactiveNotifications()
             }
@@ -91,6 +103,8 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
+                    viewModel.fetchUpcomingEvents()
+                    viewModel.fetchWidgetData()
                     viewModel.checkForProactiveNotifications()
                 }
             }

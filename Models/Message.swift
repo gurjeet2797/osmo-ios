@@ -11,6 +11,7 @@ struct Message: Identifiable, Sendable, Codable {
     var requiresConfirmation: Bool
     var deviceActions: [DeviceAction]
     var attachments: [Attachment]
+    var clarificationOptions: [String]?
 
     init(
         id: UUID = UUID(),
@@ -22,7 +23,8 @@ struct Message: Identifiable, Sendable, Codable {
         planId: String? = nil,
         requiresConfirmation: Bool = false,
         deviceActions: [DeviceAction] = [],
-        attachments: [Attachment] = []
+        attachments: [Attachment] = [],
+        clarificationOptions: [String]? = nil
     ) {
         self.id = id
         self.content = content
@@ -34,11 +36,12 @@ struct Message: Identifiable, Sendable, Codable {
         self.requiresConfirmation = requiresConfirmation
         self.deviceActions = deviceActions
         self.attachments = attachments
+        self.clarificationOptions = clarificationOptions
     }
 
     enum CodingKeys: String, CodingKey {
         case id, content, isUser, timestamp, categories, tags, planId
-        case requiresConfirmation, deviceActions, attachments
+        case requiresConfirmation, deviceActions, attachments, clarificationOptions
     }
 }
 

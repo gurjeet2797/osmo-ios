@@ -172,13 +172,17 @@ async def google_callback(
     )
     encrypted_tokens = fernet.encrypt(tokens_json.encode()).decode()
 
+    dev_emails = [e.strip() for e in settings.dev_emails.split(",") if e.strip()]
     if user is None:
-        user = User(email=email, name=google_name, google_tokens_encrypted=encrypted_tokens)
+        tier = "dev" if email in dev_emails else "free"
+        user = User(email=email, name=google_name, google_tokens_encrypted=encrypted_tokens, subscription_tier=tier)
         db.add(user)
     else:
         user.google_tokens_encrypted = encrypted_tokens
         if google_name and not user.name:
             user.name = google_name
+        if email in dev_emails and user.subscription_tier != "dev":
+            user.subscription_tier = "dev"
 
     await db.commit()
     await db.refresh(user)

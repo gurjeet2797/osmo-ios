@@ -9,10 +9,12 @@ struct CommandRequest: Codable, Sendable {
     let linkedProviders: [String]
     let latitude: Double?
     let longitude: Double?
+    let imageData: String?
 
     enum CodingKeys: String, CodingKey {
         case transcript, timezone, locale, latitude, longitude
         case linkedProviders = "linked_providers"
+        case imageData = "image_data"
     }
 }
 
@@ -41,6 +43,24 @@ struct Attachment: Codable, Sendable, Identifiable {
     }
 }
 
+struct ClarificationResponse: Codable, Sendable {
+    let spokenResponse: String
+    let question: String
+    let options: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case spokenResponse = "spoken_response"
+        case question, options
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        spokenResponse = try container.decode(String.self, forKey: .spokenResponse)
+        question = try container.decode(String.self, forKey: .question)
+        options = try container.decodeIfPresent([String].self, forKey: .options) ?? []
+    }
+}
+
 struct CommandResponse: Codable, Sendable {
     let spokenResponse: String
     let actionPlan: ActionPlan?
@@ -50,6 +70,8 @@ struct CommandResponse: Codable, Sendable {
     let planId: String?
     let attachments: [Attachment]
     let updatedUserName: String?
+    let remainingRequests: Int?
+    let clarification: ClarificationResponse?
 
     enum CodingKeys: String, CodingKey {
         case spokenResponse = "spoken_response"
@@ -60,6 +82,8 @@ struct CommandResponse: Codable, Sendable {
         case planId = "plan_id"
         case attachments
         case updatedUserName = "updated_user_name"
+        case remainingRequests = "remaining_requests"
+        case clarification
     }
 
     init(from decoder: Decoder) throws {
@@ -72,6 +96,8 @@ struct CommandResponse: Codable, Sendable {
         planId = try container.decodeIfPresent(String.self, forKey: .planId)
         attachments = try container.decodeIfPresent([Attachment].self, forKey: .attachments) ?? []
         updatedUserName = try container.decodeIfPresent(String.self, forKey: .updatedUserName)
+        remainingRequests = try container.decodeIfPresent(Int.self, forKey: .remainingRequests)
+        clarification = try container.decodeIfPresent(ClarificationResponse.self, forKey: .clarification)
     }
 }
 
@@ -248,6 +274,106 @@ struct PendingNotification: Codable, Sendable, Identifiable {
 
 struct NotificationDeliveredRequest: Codable, Sendable {
     let ids: [String]
+}
+
+// MARK: - Subscription
+
+struct SubscriptionStatusResponse: Codable, Sendable {
+    let tier: String
+    let remainingRequests: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case tier
+        case remainingRequests = "remaining_requests"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        tier = try container.decode(String.self, forKey: .tier)
+        remainingRequests = try container.decodeIfPresent(Int.self, forKey: .remainingRequests)
+    }
+}
+
+struct VerifyReceiptRequest: Codable, Sendable {
+    let transactionId: String
+
+    enum CodingKeys: String, CodingKey {
+        case transactionId = "transaction_id"
+    }
+}
+
+// MARK: - Home Widgets
+
+enum HomeWidgetType: String, Codable, CaseIterable, Sendable {
+    case calendar
+    case email
+    case commute
+    case briefing
+    case weather
+}
+
+// MARK: - Widget Data
+
+struct WidgetDataResponse: Codable, Sendable {
+    let email: EmailWidgetData?
+    let commute: CommuteWidgetData?
+}
+
+struct EmailWidgetData: Codable, Sendable {
+    let unreadCount: Int
+    let topEmails: [EmailPreview]
+
+    enum CodingKeys: String, CodingKey {
+        case unreadCount = "unread_count"
+        case topEmails = "top_emails"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
+        topEmails = try container.decodeIfPresent([EmailPreview].self, forKey: .topEmails) ?? []
+    }
+}
+
+struct EmailPreview: Codable, Sendable, Identifiable {
+    var id: String { "\(sender):\(subject)" }
+    let sender: String
+    let subject: String
+    let snippet: String
+
+    enum CodingKeys: String, CodingKey {
+        case sender, subject, snippet
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sender = try container.decodeIfPresent(String.self, forKey: .sender) ?? "Unknown"
+        subject = try container.decodeIfPresent(String.self, forKey: .subject) ?? "(no subject)"
+        snippet = try container.decodeIfPresent(String.self, forKey: .snippet) ?? ""
+    }
+}
+
+struct CommuteWidgetData: Codable, Sendable {
+    let duration: String?
+    let durationSeconds: Int?
+    let distance: String?
+    let destination: String?
+    let travelMode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case duration, distance, destination
+        case durationSeconds = "duration_seconds"
+        case travelMode = "travel_mode"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        duration = try container.decodeIfPresent(String.self, forKey: .duration)
+        durationSeconds = try container.decodeIfPresent(Int.self, forKey: .durationSeconds)
+        distance = try container.decodeIfPresent(String.self, forKey: .distance)
+        destination = try container.decodeIfPresent(String.self, forKey: .destination)
+        travelMode = try container.decodeIfPresent(String.self, forKey: .travelMode)
+    }
 }
 
 // MARK: - API Error

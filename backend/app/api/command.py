@@ -7,7 +7,9 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import func as sa_func, select
 
 from app.config import settings
 from app.connectors.google_calendar import credentials_from_encrypted
@@ -43,6 +45,25 @@ discover_and_load_skills()
 router = APIRouter()
 
 _pending_plans: dict[str, tuple[ActionPlan, str, list[dict[str, Any]]]] = {}
+
+
+async def _count_today_commands(db: AsyncSession, user_id: str) -> int:
+    """Count how many commands this user has sent today."""
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    result = await db.execute(
+        select(sa_func.count(CommandHistory.id))
+        .where(CommandHistory.user_id == user_id)
+        .where(CommandHistory.created_at >= today_start)
+    )
+    return result.scalar_one()
+
+
+def _get_user_tier(user: User) -> str:
+    """Determine effective subscription tier (dev emails override)."""
+    dev_emails = [e.strip() for e in settings.dev_emails.split(",") if e.strip()]
+    if user.email in dev_emails:
+        return "dev"
+    return user.subscription_tier or "free"
 
 
 def _extract_updated_name(step_results: list) -> str | None:
@@ -243,6 +264,19 @@ async def handle_command(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    # Rate limiting
+    tier = _get_user_tier(user)
+    remaining_requests: int | None = None
+    if tier == "free":
+        cmd_count = await _count_today_commands(db, str(user.id))
+        remaining_requests = max(0, settings.free_daily_limit - cmd_count)
+        if remaining_requests <= 0:
+            return CommandResponse(
+                spoken_response=f"You've hit your daily limit of {settings.free_daily_limit} requests. Upgrade to Pro for unlimited access.",
+                remaining_requests=0,
+            )
+        remaining_requests -= 1  # account for this request
+
     llm = create_llm_client()
     providers = body.linked_providers or ["google_calendar"]
 
@@ -260,26 +294,63 @@ async def handle_command(
     use_anthropic = settings.llm_provider == "anthropic"
 
     # 0. OpenClaw delegation — for complex/multi-step/memory tasks (opt-in)
-    if settings.openclaw_enabled and await should_delegate_to_openclaw(body.transcript):
-        context_meta = {
-            "user_id": str(user.id),
-            "timezone": body.timezone,
-            "locale": body.locale,
-            "providers": ", ".join(body.linked_providers or []),
-        }
-        oc_response = await openclaw_client.send_message(
-            text=body.transcript,
-            session_id=f"osmo-{user.id}",
-            context=context_meta,
+    if settings.openclaw_enabled:
+        should_delegate, routing_tier = await should_delegate_to_openclaw(body.transcript)
+        log.info(
+            "openclaw.routing",
+            delegated=should_delegate,
+            tier=routing_tier,
+            user_id=str(user.id),
+            message_preview=body.transcript[:80],
         )
-        if oc_response:
-            log.info("openclaw.delegated", user_id=str(user.id), transcript=body.transcript[:80])
-            await _record_command(db, user, body, ["openclaw"])
-            return CommandResponse(
-                spoken_response=oc_response,
-                requires_confirmation=False,
+        if should_delegate:
+            # Enrich context with current time, user name, and calendar events
+            now = datetime.now(UTC)
+            context_meta: dict[str, Any] = {
+                "current_time": now.isoformat(),
+                "user_id": str(user.id),
+                "user_name": user.name or user.email or "User",
+                "timezone": body.timezone,
+                "locale": body.locale,
+                "providers": ", ".join(body.linked_providers or []),
+            }
+            # Best-effort: inject today's calendar events
+            try:
+                if user.google_tokens_encrypted:
+                    from app.connectors.google_calendar import GoogleCalendarClient, credentials_from_encrypted
+                    creds = credentials_from_encrypted(user.google_tokens_encrypted)
+                    cal_client = GoogleCalendarClient(creds)
+                    from datetime import timedelta
+                    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                    day_end = day_start + timedelta(days=1)
+                    today_events = cal_client.list_events(time_min=day_start, time_max=day_end, max_results=10)
+                    if today_events:
+                        event_lines = [
+                            f"- {ev.get('start', {}).get('dateTime', 'TBD')}: {ev.get('summary', 'Untitled')}"
+                            for ev in today_events
+                        ]
+                        context_meta["todays_calendar"] = "\n".join(event_lines)
+            except Exception:
+                log.debug("openclaw.calendar_context_failed", exc_info=True)
+            # Include user preferences if available
+            if pref_block:
+                context_meta["user_preferences"] = pref_block
+
+            oc_response = await openclaw_client.send_message(
+                text=body.transcript,
+                session_id=f"osmo-{user.id}",
+                context=context_meta,
             )
-        # Fall through to local planner if OpenClaw returned None
+            if oc_response:
+                log.info("openclaw.delegated", user_id=str(user.id), tier=routing_tier, transcript=body.transcript[:80])
+                await _record_command(db, user, body, ["openclaw"])
+                return CommandResponse(
+                    spoken_response=oc_response,
+                    requires_confirmation=False,
+                    remaining_requests=remaining_requests,
+                )
+            # Fall through to local planner if OpenClaw returned None
+            log.warning("openclaw.fallback", reason="null_response", user_id=str(user.id))
 
     # 1. Load session history (both providers now use sessions)
     sm = SessionManager(db, str(user.id))
@@ -292,6 +363,7 @@ async def handle_command(
             body.transcript,
             tools,
             messages=session_messages,
+            image_data=body.image_data,
         )
     except Exception as chat_err:
         # If session history is corrupted (e.g. dangling tool_use without tool_result),
@@ -305,6 +377,7 @@ async def handle_command(
                 body.transcript,
                 tools,
                 messages=session_messages,
+                image_data=body.image_data,
             )
         else:
             raise
@@ -324,6 +397,7 @@ async def handle_command(
         return CommandResponse(
             spoken_response=response.text or "...",
             requires_confirmation=False,
+            remaining_requests=remaining_requests,
         )
 
     # 4. Convert tool calls to ActionSteps → ActionPlan
@@ -342,6 +416,7 @@ async def handle_command(
         return CommandResponse(
             spoken_response=policy_result.block_reason or "This action is blocked by policy.",
             action_plan=plan,
+            remaining_requests=remaining_requests,
         )
 
     # 6. Confirmation check
@@ -362,6 +437,7 @@ async def handle_command(
             requires_confirmation=True,
             confirmation_prompt=prompt,
             plan_id=plan.plan_id,
+            remaining_requests=remaining_requests,
         )
 
     # 7. Execute
@@ -405,6 +481,7 @@ async def handle_command(
         plan_id=plan.plan_id,
         attachments=attachments,
         updated_user_name=updated_name,
+        remaining_requests=remaining_requests,
     )
 
 

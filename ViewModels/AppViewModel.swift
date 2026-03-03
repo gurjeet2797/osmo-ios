@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Translation
 
 @Observable
@@ -10,6 +11,8 @@ final class AppViewModel {
     var showChat: Bool = false
     var showHistory: Bool = false
     var showControlCenter: Bool = false
+    var showPaywall: Bool = false
+    var showVisionCamera: Bool = false
     var activeCategory: CategoryType? = nil
     var errorMessage: String?
     var pendingConfirmation: PendingConfirmation?
@@ -50,6 +53,20 @@ final class AppViewModel {
 
     // Orb state
     var orbPhase: OrbPhase = .idle
+
+    // Home widgets
+    var homeWidgets: [HomeWidgetType] = [.calendar, .briefing]
+
+    // Subscription
+    var subscriptionTier: String = "free"
+    var remainingRequests: Int?
+
+    // Widget data
+    var emailWidgetData: EmailWidgetData?
+    var commuteWidgetData: CommuteWidgetData?
+
+    // Vision — captured photo for next command
+    var capturedPhoto: UIImage?
 
     let apiClient = APIClient()
     let conversationStore = ConversationStore()
@@ -118,6 +135,74 @@ final class AppViewModel {
         }
     }
 
+    // MARK: - Preferences
+
+    func fetchPreferences() {
+        Task {
+            do {
+                let prefs = try await apiClient.fetchPreferences()
+                if let widgetJSON = prefs["home_widgets"],
+                   let data = widgetJSON.data(using: .utf8),
+                   let types = try? JSONDecoder().decode([HomeWidgetType].self, from: data) {
+                    homeWidgets = types
+                }
+            } catch {
+                // Silently fail
+            }
+        }
+    }
+
+    func fetchWidgetData() {
+        Task {
+            do {
+                let data = try await apiClient.fetchWidgetData()
+                emailWidgetData = data.email
+                commuteWidgetData = data.commute
+            } catch {
+                // Silently fail — widgets show placeholder
+            }
+        }
+    }
+
+    func saveWidgetPreferences() {
+        Task {
+            if let data = try? JSONEncoder().encode(homeWidgets),
+               let json = String(data: data, encoding: .utf8) {
+                _ = try? await apiClient.savePreferences(["home_widgets": json])
+            }
+        }
+    }
+
+    // MARK: - Subscription
+
+    func fetchSubscriptionStatus() {
+        Task {
+            do {
+                let status = try await apiClient.fetchSubscriptionStatus()
+                subscriptionTier = status.tier
+                remainingRequests = status.remainingRequests
+            } catch {
+                // Silently fail
+            }
+        }
+    }
+
+    var isDevMode: Bool { subscriptionTier == "dev" }
+    var isProOrDev: Bool { subscriptionTier == "pro" || subscriptionTier == "dev" }
+
+    // MARK: - Vision (Photo → AI)
+
+    func startPhotoThenVoice() {
+        showVisionCamera = true
+    }
+
+    func onPhotoCaptured(_ image: UIImage) {
+        capturedPhoto = image
+        showVisionCamera = false
+        // Automatically start recording after capture
+        startRecording()
+    }
+
     // MARK: - Proactive Notifications
 
     func checkForProactiveNotifications() {
@@ -171,7 +256,7 @@ final class AppViewModel {
         guard currentConversation == nil else { return }
         var conversation = Conversation()
         let greeting = Message(
-            content: "Hey! I'm Osmo, your personal calendar assistant. Try saying \"Schedule a meeting tomorrow at 2pm\" or tap the mic to get started.",
+            content: "Hey! Tap the orb or say something.",
             isUser: false
         )
         conversation.messages.append(greeting)
@@ -228,9 +313,12 @@ final class AppViewModel {
         speechRecognizer.onError = { [weak self] errorText in
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                // Don't show errors if we're not actively recording (already stopped)
+                guard self.isRecording else { return }
                 self.errorMessage = errorText
                 self.speechRecognizer.stopRecording()
                 self.isRecording = false
+                self.orbPhase = .idle
             }
         }
 
@@ -298,16 +386,33 @@ final class AppViewModel {
         activeCategory = nil
         errorMessage = nil
 
+        // Capture and clear photo for this request
+        let photoForRequest = capturedPhoto
+        capturedPhoto = nil
+
         orbPhase = .sending
         showStatus("Command sent...")
 
         Task {
             do {
                 showStatus("Processing...")
+
+                // Encode photo as base64 JPEG if present
+                var imageBase64: String?
+                if let photo = photoForRequest,
+                   let jpegData = photo.jpegData(compressionQuality: 0.7) {
+                    // Limit to ~500KB
+                    let data = jpegData.count > 500_000
+                        ? (photo.jpegData(compressionQuality: 0.3) ?? jpegData)
+                        : jpegData
+                    imageBase64 = data.base64EncodedString()
+                }
+
                 let response = try await apiClient.sendCommand(
                     transcript: text,
                     latitude: LocationManager.shared.currentLatitude,
-                    longitude: LocationManager.shared.currentLongitude
+                    longitude: LocationManager.shared.currentLongitude,
+                    imageData: imageBase64
                 )
                 showStatus("Executed successfully")
                 dismissStatusAfterDelay()
@@ -445,6 +550,11 @@ final class AppViewModel {
     private func handleCommandResponse(_ response: CommandResponse) {
         isLoading = false
 
+        // Update remaining requests
+        if let remaining = response.remainingRequests {
+            remainingRequests = remaining
+        }
+
         // Update user name if the backend changed it
         if let newName = response.updatedUserName {
             authManager?.updateName(newName)
@@ -482,6 +592,7 @@ final class AppViewModel {
             }
         }
 
+        let clarificationOpts = response.clarification?.options
         let message = Message(
             content: response.spokenResponse,
             isUser: false,
@@ -489,7 +600,8 @@ final class AppViewModel {
             planId: response.planId,
             requiresConfirmation: response.requiresConfirmation,
             deviceActions: response.deviceActions,
-            attachments: response.attachments
+            attachments: response.attachments,
+            clarificationOptions: clarificationOpts
         )
         currentConversation?.messages.append(message)
 

@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import attachments, auth, calendar, command, health, notifications, openclaw, suggestions
+from app.api import attachments, auth, calendar, command, health, notifications, openclaw, preferences, subscription, suggestions, widgets
 from app.config import settings
 from app.db.session import engine, redis_pool
 
@@ -43,6 +43,14 @@ async def lifespan(app: FastAPI):
         stop_scheduler()
     except Exception:
         log.warning("scheduler.stop_failed", exc_info=True)
+
+    # Close OpenClaw connection pool
+    from app.core.openclaw_client import openclaw_client
+    try:
+        await openclaw_client.close()
+    except Exception:
+        log.warning("openclaw.close_failed", exc_info=True)
+
     await engine.dispose()
     await redis_pool.aclose()
 
@@ -70,3 +78,6 @@ app.include_router(attachments.router, prefix="/attachments", tags=["attachments
 app.include_router(suggestions.router, prefix="/suggestions", tags=["suggestions"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(openclaw.router, prefix="/openclaw", tags=["openclaw"])
+app.include_router(preferences.router, prefix="/preferences", tags=["preferences"])
+app.include_router(subscription.router, prefix="/subscription", tags=["subscription"])
+app.include_router(widgets.router, prefix="/widgets", tags=["widgets"])

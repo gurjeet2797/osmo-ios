@@ -76,7 +76,18 @@ struct ParticleOrbView: View {
                             activeController = MotionControllerRegistry.controller(for: .armed)
                         }
 
-                        // Long press detection (0.5s held, minimal movement)
+                        // Swipe-up detection: vertical drag > 50px upward → Control Center
+                        if let startLoc = dragStartLocation {
+                            let dy = value.location.y - startLoc.y
+                            if dy < -50 {
+                                viewModel.showControlCenter = true
+                                dragStartTime = nil
+                                dragStartLocation = nil
+                                return
+                            }
+                        }
+
+                        // Long press detection (0.5s held, minimal movement) → Vision camera
                         if let start = dragStartTime,
                            let startLoc = dragStartLocation {
                             let held = Date().timeIntervalSince(start)
@@ -84,7 +95,7 @@ struct ParticleOrbView: View {
                             let dy = value.location.y - startLoc.y
                             let dist = sqrt(dx * dx + dy * dy)
                             if held >= 0.5 && dist < 15 {
-                                viewModel.showControlCenter = true
+                                viewModel.startPhotoThenVoice()
                                 dragStartTime = nil
                                 dragStartLocation = nil
                             }

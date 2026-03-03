@@ -320,6 +320,31 @@ struct MessageBubble: View {
                     .animation(.easeOut(duration: 0.4).delay(0.3), value: appeared)
             }
 
+            // Clarification option pills
+            if !message.isUser, let options = message.clarificationOptions, !options.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(options, id: \.self) { option in
+                        Button {
+                            viewModel.inputText = option
+                            viewModel.sendMessage()
+                        } label: {
+                            Text(option)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(.white.opacity(0.08))
+                                        .stroke(.white.opacity(0.12), lineWidth: 0.5)
+                                )
+                        }
+                    }
+                }
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.4).delay(0.35), value: appeared)
+            }
+
             // Tags
             if !message.isUser, let tags = message.tags, !tags.isEmpty {
                 TagsRow(tags: tags)

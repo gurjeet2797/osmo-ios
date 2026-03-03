@@ -29,7 +29,10 @@ final class AuthManager {
     /// First name for greeting — from stored name or derived from email
     var firstName: String? {
         if let name = userName, !name.isEmpty {
-            return name.components(separatedBy: " ").first
+            let first = name.components(separatedBy: " ").first ?? name
+            if first.count >= 2 {
+                return first.prefix(1).uppercased() + first.dropFirst()
+            }
         }
         if let email = userEmail {
             let local = email.components(separatedBy: "@").first ?? email
@@ -38,7 +41,7 @@ final class AuthManager {
             while let last = name.last, last.isNumber {
                 name.removeLast()
             }
-            guard !name.isEmpty else { return nil }
+            guard name.count >= 2 else { return nil }
             return name.capitalized
         }
         return nil

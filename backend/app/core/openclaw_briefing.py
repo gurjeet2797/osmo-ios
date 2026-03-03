@@ -45,17 +45,12 @@ async def generate_morning_briefing(
             lines.append(f"- {start}: {title}{att_str}")
         events_text = "\n".join(lines)
 
-    prompt = f"""You are Osmo, a warm and concise personal assistant.
-Generate a brief morning briefing (3-5 sentences max) for the user.
-Keep it friendly, practical, and scannable.
+    prompt = f"""Morning briefing (3-5 sentences). Friendly, practical.
 
-Today's calendar:
-{events_text}
+Calendar: {events_text}
+Prefs: {preferences or 'None'}
 
-User preferences: {preferences or 'No preferences stored.'}
-
-Give a quick summary of the day ahead, any conflicts or busy periods to flag,
-and one encouraging note to close. Do not use bullet points — write naturally."""
+Summarize the day, flag conflicts, close with encouragement. No bullets."""
 
     return await openclaw_client.send_message(
         text=prompt,
@@ -86,20 +81,11 @@ async def generate_meeting_prep(
     """
     attendees_str = ", ".join(attendees) if attendees else "No attendees listed."
 
-    prompt = f"""You are Osmo preparing a meeting briefing for the user.
-
-Meeting: {meeting_title}
+    prompt = f"""Meeting prep for: {meeting_title}
 Attendees: {attendees_str}
-Existing notes: {notes or 'None.'}
+Notes: {notes or 'None'}
 
-Provide a concise meeting prep brief with:
-1. **Purpose** — likely goal of this meeting (infer if not stated)
-2. **Attendees** — one line per person with role/context if known
-3. **Key talking points** — 3 bullet points to drive the conversation
-4. **Open questions** — what the user might want to clarify
-5. **Action items from last time** — if any context is available
-
-Keep it tight. This should fit on one screen."""
+Brief with: **Purpose**, **Attendees** (one line each), **Talking points** (3), **Open questions**, **Prior actions**. Fit on one screen."""
 
     return await openclaw_client.send_message(
         text=prompt,
@@ -119,5 +105,103 @@ async def generate_task_summary(
     return await openclaw_client.send_message(
         text=task_description,
         session_id=f"osmo-task-{user_id}",
+        context=context,
+    )
+
+
+async def deep_research(
+    topic: str,
+    user_id: str,
+    context: dict[str, Any] | None = None,
+) -> str | None:
+    """
+    Perform deep research on a topic using web search and analysis.
+
+    Returns structured markdown with findings, sources, and key takeaways.
+    """
+    prompt = f"""Research: {topic}
+
+Use web search + knowledge. Return: **Key Findings** (3-5 points), **Analysis** (2-3 paragraphs), **Sources**, **Takeaways** (2-3 actionable). Thorough but concise."""
+
+    return await openclaw_client.send_message(
+        text=prompt,
+        session_id=f"osmo-research-{user_id}",
+        context=context,
+    )
+
+
+async def generate_review(
+    period: str,
+    user_id: str,
+    calendar_events: list[dict[str, Any]] | None = None,
+    command_history: list[str] | None = None,
+    context: dict[str, Any] | None = None,
+) -> str | None:
+    """
+    Generate a daily or weekly review from calendar events and command history.
+
+    Args:
+        period: "daily" or "weekly"
+        user_id: OpenClaw session ID
+        calendar_events: Events from the review period
+        command_history: Recent commands/tasks from the period
+        context: Additional context (timezone, preferences)
+    """
+    events_block = "No calendar data available."
+    if calendar_events:
+        lines = []
+        for ev in calendar_events:
+            title = ev.get("title", "Untitled")
+            start = ev.get("start_time", "")
+            lines.append(f"- {start}: {title}")
+        events_block = "\n".join(lines)
+
+    history_block = "No command history available."
+    if command_history:
+        history_block = "\n".join(f"- {cmd}" for cmd in command_history[:20])
+
+    prompt = f"""{period.title()} review.
+
+Calendar: {events_block}
+Activity: {history_block}
+
+Sections: **Accomplishments**, **Patterns**, **Unfinished Business**, **Suggestions** (1-2). Warm, honest, actionable. 4-6 paragraphs max."""
+
+    return await openclaw_client.send_message(
+        text=prompt,
+        session_id=f"osmo-review-{user_id}",
+        context=context,
+    )
+
+
+async def decision_analysis(
+    decision: str,
+    user_id: str,
+    options: list[str] | None = None,
+    context: dict[str, Any] | None = None,
+) -> str | None:
+    """
+    Help the user think through a decision with structured pros/cons analysis.
+
+    Args:
+        decision: The decision to analyze
+        user_id: OpenClaw session ID
+        options: Explicit options to compare (if provided)
+        context: Additional context
+    """
+    options_block = ""
+    if options:
+        options_block = "\nExplicit options to compare:\n" + "\n".join(
+            f"- {opt}" for opt in options
+        )
+
+    prompt = f"""Decision analysis: {decision}
+{options_block}
+
+Sections: **Options** (list or infer 2-3), **Pros & Cons** (2-3 each), **Key Considerations**, **Recommendation**, **Next Steps** (1-2). Balanced and practical."""
+
+    return await openclaw_client.send_message(
+        text=prompt,
+        session_id=f"osmo-decision-{user_id}",
         context=context,
     )

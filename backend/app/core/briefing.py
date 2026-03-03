@@ -57,17 +57,64 @@ async def prepare_morning_briefing(user_id: str) -> str | None:
         )
         prefs = {p.key: p.value for p in result.scalars().all()}
 
-    # Build briefing prompt
-    pref_text = ", ".join(f"{k}: {v}" for k, v in prefs.items()) if prefs else "none"
+    # Build briefing prompt with real calendar data
     user_tz = user.timezone or "UTC"
     user_name = user.name or "there"
+    first_name = user_name.split()[0] if user_name != "there" else "there"
+
+    # Fetch today's calendar events for the briefing
+    events_text = "No events today."
+    try:
+        if user.google_tokens_encrypted:
+            from app.connectors.google_calendar import GoogleCalendarClient, credentials_from_encrypted
+            from zoneinfo import ZoneInfo
+            creds = credentials_from_encrypted(user.google_tokens_encrypted)
+            cal_client = GoogleCalendarClient(creds)
+            try:
+                tz = ZoneInfo(user_tz)
+            except (KeyError, ValueError):
+                tz = ZoneInfo("UTC")
+            now = datetime.now(tz)
+            day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_end = day_start + timedelta(days=1)
+            today_events = cal_client.list_events(time_min=day_start, time_max=day_end, max_results=10)
+            if today_events:
+                lines = []
+                for ev in today_events:
+                    start = ev.get("start", {}).get("dateTime", ev.get("start", {}).get("date", ""))
+                    summary = ev.get("summary", "Untitled")
+                    # Extract just time portion
+                    if "T" in start:
+                        time_part = start.split("T")[1][:5]
+                    else:
+                        time_part = "all day"
+                    lines.append(f"- {time_part}: {summary}")
+                events_text = "\n".join(lines)
+            else:
+                events_text = "No events today — open schedule."
+    except Exception:
+        log.debug("briefing.calendar_fetch_failed", user_id=user_id, exc_info=True)
+
+    # Fetch unread email count
+    email_text = ""
+    try:
+        if user.google_tokens_encrypted:
+            from app.connectors.google_gmail import GoogleGmailClient
+            gmail_creds = credentials_from_encrypted(user.google_tokens_encrypted)
+            gmail_client = GoogleGmailClient(gmail_creds)
+            unread = gmail_client.search_messages("is:unread", max_results=1)
+            unread_count = unread.get("result_count", 0) if isinstance(unread, dict) else len(unread) if isinstance(unread, list) else 0
+            if unread_count > 0:
+                email_text = f"\nUnread emails: {unread_count}."
+    except Exception:
+        log.debug("briefing.email_fetch_failed", user_id=user_id, exc_info=True)
 
     prompt = (
-        f"Generate a short, friendly morning briefing for {user_name}. "
-        f"Their timezone is {user_tz}. "
-        f"Their preferences: {pref_text}. "
-        f"Keep it to 2-3 sentences. Be warm and concise. "
-        f"Mention what kind of day it looks like based on available context."
+        f"Write a 2-sentence morning briefing for {first_name}. "
+        f"Timezone: {user_tz}. No emoji. No filler.\n\n"
+        f"Today's calendar:\n{events_text}{email_text}\n\n"
+        f"Summarize what the day looks like based on the actual events. "
+        f"If no events, note the open schedule briefly. Be direct and useful."
     )
 
     # Call LLM for briefing
@@ -77,7 +124,8 @@ async def prepare_morning_briefing(user_id: str) -> str | None:
             client = AsyncAnthropic(api_key=settings.anthropic_api_key)
             response = await client.messages.create(
                 model=settings.anthropic_model,
-                max_tokens=256,
+                max_tokens=150,
+                system="You are Osmo, a concise personal assistant. No emoji. No filler.",
                 messages=[{"role": "user", "content": prompt}],
             )
             briefing = response.content[0].text
@@ -87,10 +135,10 @@ async def prepare_morning_briefing(user_id: str) -> str | None:
             response = await client.chat.completions.create(
                 model=settings.openai_model,
                 messages=[
-                    {"role": "system", "content": "You are Osmo, a friendly AI assistant."},
+                    {"role": "system", "content": "You are Osmo, a concise personal assistant. No emoji. No filler."},
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=256,
+                max_tokens=150,
             )
             briefing = response.choices[0].message.content
     except Exception:

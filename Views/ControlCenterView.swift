@@ -251,15 +251,144 @@ struct ControlCenterView: View {
     // MARK: - Settings Content
 
     private var settingsContent: some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                // Home Widgets section
+                settingsSection("HOME WIDGETS") {
+                    ForEach(HomeWidgetType.allCases, id: \.self) { widget in
+                        widgetToggleRow(widget)
+                    }
+                }
 
-            Text("Settings coming soon")
-                .font(.system(size: 13, weight: .light, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.25))
+                // Account section
+                settingsSection("ACCOUNT") {
+                    if let email = viewModel.authManager?.userEmail {
+                        settingsRow(icon: "envelope", label: email)
+                    }
+                    // Subscription
+                    HStack {
+                        Image(systemName: "crown")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .frame(width: 24)
+                        Text("Subscription")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.75))
+                        Spacer()
+                        if viewModel.subscriptionTier == "dev" {
+                            Text("Developer")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.purple)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Capsule().fill(.purple.opacity(0.15)))
+                        } else if viewModel.subscriptionTier == "pro" {
+                            Text("Pro")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.green)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Capsule().fill(.green.opacity(0.15)))
+                        } else {
+                            Button {
+                                viewModel.showPaywall = true
+                            } label: {
+                                Text("Upgrade")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Capsule().fill(.white.opacity(0.1)))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(settingsRowBackground)
+                }
 
+                // About section
+                settingsSection("ABOUT") {
+                    settingsRow(icon: "info.circle", label: "Version 1.0.0")
+                    if viewModel.isDevMode {
+                        settingsRow(icon: "hammer", label: "Developer Mode")
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    // MARK: - Settings Helpers
+
+    private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .tracking(2)
+                .foregroundStyle(.white.opacity(0.3))
+            content()
+        }
+    }
+
+    private func settingsRow(icon: String, label: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.5))
+                .frame(width: 24)
+            Text(label)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.white.opacity(0.75))
             Spacer()
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(settingsRowBackground)
+    }
+
+    private var settingsRowBackground: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(.white.opacity(0.05))
+            .stroke(.white.opacity(0.06), lineWidth: 0.5)
+    }
+
+    private var widgetIcons: [HomeWidgetType: String] {
+        [.calendar: "calendar", .email: "envelope", .commute: "car", .briefing: "sparkles", .weather: "cloud.sun"]
+    }
+
+    private var widgetLabels: [HomeWidgetType: String] {
+        [.calendar: "Calendar", .email: "Email", .commute: "Commute", .briefing: "Briefing", .weather: "Weather"]
+    }
+
+    private func widgetToggleRow(_ widget: HomeWidgetType) -> some View {
+        let isOn = viewModel.homeWidgets.contains(widget)
+        return HStack(spacing: 12) {
+            Image(systemName: widgetIcons[widget] ?? "square")
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.5))
+                .frame(width: 24)
+            Text(widgetLabels[widget] ?? widget.rawValue)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.white.opacity(0.75))
+            Spacer()
+            Toggle("", isOn: Binding(
+                get: { isOn },
+                set: { newValue in
+                    if newValue {
+                        viewModel.homeWidgets.append(widget)
+                    } else {
+                        viewModel.homeWidgets.removeAll { $0 == widget }
+                    }
+                    viewModel.saveWidgetPreferences()
+                }
+            ))
+            .tint(.white.opacity(0.4))
+            .labelsHidden()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(settingsRowBackground)
     }
 
     // MARK: - Calendar Helpers

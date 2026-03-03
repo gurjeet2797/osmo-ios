@@ -47,8 +47,9 @@ class BaseLLMClient(ABC):
         user_message: str,
         tools: list[dict[str, Any]] | None = None,
         messages: list[dict[str, Any]] | None = None,
+        image_data: str | None = None,
     ) -> LLMResponse:
-        """Send a message (with optional history) and return a unified response."""
+        """Send a message (with optional history and image) and return a unified response."""
 
     @abstractmethod
     async def follow_up(
@@ -78,10 +79,17 @@ class AnthropicLLMClient(BaseLLMClient):
         user_message: str,
         tools: list[dict[str, Any]] | None = None,
         messages: list[dict[str, Any]] | None = None,
+        image_data: str | None = None,
     ) -> LLMResponse:
         # Build message list: optional history + new user message
         msgs: list[dict[str, Any]] = list(messages or [])
-        msgs.append({"role": "user", "content": user_message})
+        if image_data:
+            msgs.append({"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image_data}},
+                {"type": "text", "text": user_message},
+            ]})
+        else:
+            msgs.append({"role": "user", "content": user_message})
 
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -181,16 +189,24 @@ class OpenAILLMClient(BaseLLMClient):
         user_message: str,
         tools: list[dict[str, Any]] | None = None,
         messages: list[dict[str, Any]] | None = None,
+        image_data: str | None = None,
     ) -> LLMResponse:
         msgs: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
         if messages:
             msgs.extend(messages)
-        msgs.append({"role": "user", "content": user_message})
+        if image_data:
+            msgs.append({"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
+                {"type": "text", "text": user_message},
+            ]})
+        else:
+            msgs.append({"role": "user", "content": user_message})
 
         kwargs: dict[str, Any] = {
             "model": self._model,
             "messages": msgs,
             "temperature": 0.3,
+            "max_tokens": 2000,
         }
         if tools:
             kwargs["tools"] = tools
@@ -232,6 +248,7 @@ class OpenAILLMClient(BaseLLMClient):
             "model": self._model,
             "messages": msgs,
             "temperature": 0.5,
+            "max_tokens": 2000,
         }
         if tools:
             kwargs["tools"] = tools

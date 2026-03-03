@@ -16,6 +16,7 @@ class CommandRequest(BaseModel):
     )
     latitude: float | None = None
     longitude: float | None = None
+    image_data: str | None = None
 
 
 class Attachment(BaseModel):
@@ -35,6 +36,8 @@ class CommandResponse(BaseModel):
     plan_id: str | None = None
     attachments: list[Attachment] = Field(default_factory=list)
     updated_user_name: str | None = None
+    remaining_requests: int | None = None
+    clarification: "ClarificationResponse | None" = None
 
 
 class ConfirmRequest(BaseModel):

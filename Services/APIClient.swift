@@ -48,14 +48,15 @@ final class APIClient: Sendable {
 
     // MARK: - Commands
 
-    func sendCommand(transcript: String, timezone: String? = nil, locale: String? = nil, latitude: Double? = nil, longitude: Double? = nil) async throws -> CommandResponse {
+    func sendCommand(transcript: String, timezone: String? = nil, locale: String? = nil, latitude: Double? = nil, longitude: Double? = nil, imageData: String? = nil) async throws -> CommandResponse {
         let request = CommandRequest(
             transcript: transcript,
             timezone: timezone ?? TimeZone.current.identifier,
             locale: locale ?? Locale.current.identifier,
             linkedProviders: ["google_calendar", "google_gmail"],
             latitude: latitude,
-            longitude: longitude
+            longitude: longitude,
+            imageData: imageData
         )
         return try await post(path: "/command", body: request)
     }
@@ -101,6 +102,34 @@ final class APIClient: Sendable {
         let _: [String: AnyCodable] = try await post(path: "/notifications/delivered", body: body)
     }
 
+    // MARK: - Preferences
+
+    func fetchPreferences() async throws -> [String: String] {
+        return try await get(path: "/preferences")
+    }
+
+    func savePreferences(_ prefs: [String: String]) async throws -> [String: String] {
+        return try await put(path: "/preferences", body: prefs)
+    }
+
+    // MARK: - Subscription
+
+    func fetchSubscriptionStatus() async throws -> SubscriptionStatusResponse {
+        return try await get(path: "/subscription/status")
+    }
+
+    func verifyReceipt(transactionId: String) async throws -> [String: AnyCodable] {
+        let body = VerifyReceiptRequest(transactionId: transactionId)
+        return try await post(path: "/subscription/verify", body: body)
+    }
+
+    // MARK: - Widgets
+
+    func fetchWidgetData(widgets: [String] = ["email", "commute"]) async throws -> WidgetDataResponse {
+        let joined = widgets.joined(separator: ",")
+        return try await get(path: "/widgets/data?widgets=\(joined)")
+    }
+
     // MARK: - Session
 
     func clearSession() async throws {
@@ -121,6 +150,18 @@ final class APIClient: Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         addAuthHeader(to: &request)
+        return try await perform(request)
+    }
+
+    private func put<T: Decodable, B: Encodable>(path: String, body: B?) async throws -> T {
+        let url = baseURL.appendingPathComponent(path)
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        addAuthHeader(to: &request)
+        if let body {
+            request.httpBody = try encoder.encode(body)
+        }
         return try await perform(request)
     }
 

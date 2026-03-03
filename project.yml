@@ -40,6 +40,10 @@ targets:
         group: Views
       - path: Views/ControlCenterView.swift
         group: Views
+      - path: Views/PaywallView.swift
+        group: Views
+      - path: Views/VisionCameraView.swift
+        group: Views
       - path: Views/AttachmentView.swift
         group: Views
       - path: Views/MarkdownContentView.swift
@@ -106,6 +110,8 @@ targets:
         group: Services
       - path: Services/ConversationStore.swift
         group: Services
+      - path: Services/SubscriptionManager.swift
+        group: Services
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gurjeet.osmo
@@ -139,3 +145,5 @@ targets:
       properties:
         LSApplicationQueriesSchemes:
           - comgooglemaps
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true

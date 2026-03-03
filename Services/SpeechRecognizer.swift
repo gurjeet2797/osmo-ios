@@ -115,6 +115,14 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
                 transcriptCallback?(text)
             }
             if let taskError {
+                // Suppress cancellation errors — these fire normally when stopping recording
+                let nsError = taskError as NSError
+                if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 216 {
+                    return // "Recognition request was canceled" — expected on stop
+                }
+                if nsError.code == 1 || nsError.code == 301 {
+                    return // Other expected cancellation/timeout codes
+                }
                 errorCallback?(taskError.localizedDescription)
             }
         }

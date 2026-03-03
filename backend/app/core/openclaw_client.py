@@ -10,6 +10,7 @@ is never broken.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
@@ -18,7 +19,34 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-_TIMEOUT = httpx.Timeout(30.0, connect=5.0)
+
+@dataclass
+class OpenClawResponse:
+    """Structured response from the OpenClaw gateway."""
+
+    text: str | None = None
+    suggested_followups: list[str] = field(default_factory=list)
+    raw: dict[str, Any] | None = None
+
+    @classmethod
+    def from_api(cls, data: dict[str, Any]) -> OpenClawResponse:
+        """Parse an OpenResponses-format response."""
+        text: str | None = None
+        for output_item in data.get("output", []):
+            for content_block in output_item.get("content", []):
+                if content_block.get("type") == "output_text":
+                    text = content_block["text"]
+                    break
+            if text:
+                break
+
+        # Parse suggested follow-ups if present in metadata
+        followups: list[str] = []
+        metadata = data.get("metadata", {})
+        if isinstance(metadata, dict):
+            followups = metadata.get("suggested_followups", [])
+
+        return cls(text=text, suggested_followups=followups, raw=data)
 
 
 class OpenClawClient:
@@ -35,6 +63,16 @@ class OpenClawClient:
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
         }
+        timeout = httpx.Timeout(settings.openclaw_timeout, connect=5.0)
+        self._client = httpx.AsyncClient(
+            timeout=timeout,
+            headers=self._headers,
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=5),
+        )
+
+    async def close(self) -> None:
+        """Close the underlying connection pool. Call from app lifespan shutdown."""
+        await self._client.aclose()
 
     async def send_message(
         self,
@@ -48,6 +86,22 @@ class OpenClawClient:
         Uses the OpenResponses-compatible /v1/responses endpoint.
         Returns None if OpenClaw is disabled, unreachable, or returns an error.
         Callers should fall back to the local planner on None.
+        """
+        if not settings.openclaw_enabled:
+            return None
+
+        response = await self.send_message_structured(text, session_id, context)
+        return response.text if response else None
+
+    async def send_message_structured(
+        self,
+        text: str,
+        session_id: str = "osmo-default",
+        context: dict[str, Any] | None = None,
+    ) -> OpenClawResponse | None:
+        """
+        Send a message and return a structured OpenClawResponse with follow-ups.
+        Returns None if OpenClaw is disabled, unreachable, or errors.
         """
         if not settings.openclaw_enabled:
             return None
@@ -66,20 +120,12 @@ class OpenClawClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-                resp = await client.post(
-                    f"{self.base_url}/v1/responses",
-                    headers=self._headers,
-                    json=payload,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                # OpenResponses format: {output: [{content: [{text: "..."}]}]}
-                for output_item in data.get("output", []):
-                    for content_block in output_item.get("content", []):
-                        if content_block.get("type") == "output_text":
-                            return content_block["text"]
-                return None
+            resp = await self._client.post(
+                f"{self.base_url}/v1/responses",
+                json=payload,
+            )
+            resp.raise_for_status()
+            return OpenClawResponse.from_api(resp.json())
 
         except httpx.ConnectError:
             logger.warning("OpenClaw unreachable at %s — falling back to local planner", self.base_url)
@@ -101,19 +147,17 @@ class OpenClawClient:
             return {"enabled": False, "reachable": False, "url": self.base_url}
 
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
-                # Use the responses endpoint with a trivial ping to verify reachability
-                resp = await client.post(
-                    f"{self.base_url}/v1/responses",
-                    headers=self._headers,
-                    json={"model": "openclaw", "input": "ping", "max_output_tokens": 1},
-                )
-                return {
-                    "enabled": True,
-                    "reachable": resp.status_code < 500,
-                    "status_code": resp.status_code,
-                    "url": self.base_url,
-                }
+            resp = await self._client.post(
+                f"{self.base_url}/v1/responses",
+                json={"model": "openclaw", "input": "ping", "max_output_tokens": 1},
+                timeout=httpx.Timeout(5.0),
+            )
+            return {
+                "enabled": True,
+                "reachable": resp.status_code < 500,
+                "status_code": resp.status_code,
+                "url": self.base_url,
+            }
         except Exception as exc:  # noqa: BLE001
             return {
                 "enabled": True,

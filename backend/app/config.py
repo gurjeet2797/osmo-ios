@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-5-20250929"
-    anthropic_max_tokens: int = 8192
+    anthropic_max_tokens: int = 4096
 
     session_max_messages: int = 50
 
@@ -44,6 +44,11 @@ class Settings(BaseSettings):
 
     sentry_dsn: str = ""
 
+    # Subscription & rate limiting
+    dev_emails: str = "sales@develloinc.com,gurjeet2797@gmail.com"
+    free_daily_limit: int = 25
+    pro_monthly_price: str = "$4.99"
+
     environment: str = "development"
     allowed_origins: str = ""
 
@@ -53,6 +58,8 @@ class Settings(BaseSettings):
     openclaw_enabled: bool = False
     openclaw_url: str = "http://localhost:18790"
     openclaw_token: str = ""
+    openclaw_timeout: float = 30.0
+    openclaw_router_model: str = ""  # cheap classifier model, auto-detect from provider
 
 
 settings = Settings()

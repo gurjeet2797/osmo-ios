@@ -55,7 +55,8 @@ class Settings(BaseSettings):
     # ---------------------------------------------------------------------------
     # APNs (Apple Push Notifications) — set APNS_KEY_PATH to enable
     # ---------------------------------------------------------------------------
-    apns_key_path: str = ""  # path to .p8 file from Apple Developer
+    apns_key_path: str = ""  # path to .p8 file (local dev)
+    apns_key_contents: str = ""  # paste .p8 file contents here (Railway/cloud)
     apns_key_id: str = ""
     apns_team_id: str = ""
     apns_bundle_id: str = "com.gurjeet.osmo"

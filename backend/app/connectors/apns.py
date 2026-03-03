@@ -26,8 +26,11 @@ async def send_push_notification(
     Requires APNS_KEY_ID, APNS_TEAM_ID, APNS_KEY_PATH in settings.
     Falls back to no-op if APNs is not configured.
     """
-    if not getattr(settings, "apns_key_path", ""):
+    if not settings.apns_key_id or not settings.apns_team_id:
         log.debug("apns.not_configured")
+        return False
+    if not settings.apns_key_path and not settings.apns_key_contents:
+        log.debug("apns.no_key")
         return False
 
     try:
@@ -82,15 +85,20 @@ def _build_apns_jwt() -> str | None:
     try:
         import jwt as pyjwt
 
-        key_path = getattr(settings, "apns_key_path", "")
-        key_id = getattr(settings, "apns_key_id", "")
-        team_id = getattr(settings, "apns_team_id", "")
+        key_id = settings.apns_key_id
+        team_id = settings.apns_team_id
 
-        if not all([key_path, key_id, team_id]):
+        if not key_id or not team_id:
             return None
 
-        with open(key_path) as f:
-            private_key = f.read()
+        # Prefer inline key contents (for Railway/Heroku), fall back to file path
+        private_key = settings.apns_key_contents
+        if not private_key and settings.apns_key_path:
+            with open(settings.apns_key_path) as f:
+                private_key = f.read()
+
+        if not private_key:
+            return None
 
         payload = {
             "iss": team_id,

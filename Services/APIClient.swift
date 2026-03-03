@@ -90,6 +90,17 @@ final class APIClient: Sendable {
         return try await get(path: "/command/briefing")
     }
 
+    // MARK: - Proactive Notifications
+
+    func fetchPendingNotifications() async throws -> [PendingNotification] {
+        return try await get(path: "/notifications/pending")
+    }
+
+    func markNotificationsDelivered(_ ids: [String]) async throws {
+        let body = NotificationDeliveredRequest(ids: ids)
+        let _: [String: AnyCodable] = try await post(path: "/notifications/delivered", body: body)
+    }
+
     // MARK: - Session
 
     func clearSession() async throws {

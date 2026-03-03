@@ -17,7 +17,7 @@ class _IOSTool(BaseTool):
 
 class IOSOpenInMapsTool(_IOSTool):
     name = "ios_navigation.open_in_maps"
-    description = "Open Apple Maps with directions to a destination."
+    description = "Open Google Maps with directions to a destination."
 
     def parameters_schema(self) -> dict[str, Any]:
         return {

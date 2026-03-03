@@ -113,11 +113,6 @@ struct HomeView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // Recalibration overlay (triggered from Settings)
-            if onboarding.isRecalibrating {
-                recalibrationOverlay
-            }
-
             // Orb — always visible, particle count grows during onboarding
             VStack(spacing: 0) {
                 Spacer()
@@ -222,21 +217,10 @@ struct HomeView: View {
         }
         .opacity(onboarding.stepOpacity)
 
-        if onboarding.currentStep == .wakeWord {
-            calibrationSlotsView
-                .opacity(onboarding.stepOpacity)
-                .padding(.top, 24)
-        }
-
         Spacer()
 
         // Button(s) between text and orb — easy thumb reach
-        if onboarding.currentStep == .wakeWord {
-            // Custom controls for wake word calibration
-            wakeWordButtons
-                .opacity(onboarding.stepOpacity)
-                .padding(.bottom, 80)
-        } else if let label = onboarding.buttonLabel {
+        if let label = onboarding.buttonLabel {
             HStack(spacing: 12) {
                 Button {
                     handleOnboardingAction()
@@ -276,204 +260,6 @@ struct HomeView: View {
         let perStep = 150 / stepsCount  // 25 per step
         let stepIndex = OnboardingManager.Step.allCases.firstIndex(of: onboarding.currentStep) ?? 0
         return max(perStep, perStep * (stepIndex + 1))
-    }
-
-    // MARK: - Calibration UI
-
-    @ViewBuilder
-    private var calibrationSlotsView: some View {
-        VStack(spacing: 12) {
-            ForEach(0..<3, id: \.self) { index in
-                HStack(spacing: 10) {
-                    if index < onboarding.calibrationSamples.count {
-                        // Completed
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.green.opacity(0.7))
-                        Text(onboarding.calibrationSamples[index])
-                            .font(.system(size: 13, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.6))
-                    } else if index == onboarding.calibrationSamples.count && onboarding.isRecordingSample {
-                        // Recording
-                        ProgressView()
-                            .scaleEffect(0.7)
-                            .tint(.white.opacity(0.5))
-                        Text("listening...")
-                            .font(.system(size: 13, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.5))
-                    } else {
-                        // Pending
-                        Image(systemName: "circle")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.white.opacity(0.2))
-                        Text("---")
-                            .font(.system(size: 13, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.25))
-                    }
-                    Spacer()
-                }
-                .frame(maxWidth: 220)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var wakeWordButtons: some View {
-        HStack(spacing: 12) {
-            if onboarding.calibrationComplete {
-                Button {
-                    onboarding.finalizeCalibration()
-                    onboarding.advance()
-                } label: {
-                    Text("continue")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(.white.opacity(0.06))
-                                .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                        )
-                }
-            } else {
-                Button {
-                    viewModel.wakeWordDetector.pause()
-                    onboarding.recordCalibrationSample()
-                    // Resume wake word after sample with delay
-                    Task { @MainActor in
-                        // Wait for recording flag to clear
-                        while onboarding.isRecordingSample {
-                            try? await Task.sleep(for: .milliseconds(100))
-                        }
-                        try? await Task.sleep(for: .milliseconds(500))
-                        viewModel.resumeWakeWordIfNeeded()
-                    }
-                } label: {
-                    Text("tap to record")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(.white.opacity(0.06))
-                                .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                        )
-                }
-                .disabled(onboarding.isRecordingSample)
-                .opacity(onboarding.isRecordingSample ? 0.4 : 1)
-            }
-
-            Button {
-                onboarding.resetCalibrationState()
-                onboarding.advance()
-            } label: {
-                Text("skip")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.35))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-            }
-        }
-    }
-
-    // MARK: - Recalibration Overlay
-
-    @ViewBuilder
-    private var recalibrationOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.85).ignoresSafeArea()
-
-            VStack(spacing: 24) {
-                Spacer()
-
-                Text("recalibrate your voice")
-                    .font(.system(size: 28, weight: .thin))
-                    .tracking(4)
-                    .foregroundStyle(.white.opacity(0.6))
-
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.clear, .white.opacity(0.12), .clear],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: 60, height: 0.5)
-
-                Text("say 'osmo' three times so we recognize you")
-                    .font(.system(size: 11, weight: .light, design: .monospaced))
-                    .tracking(2)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-
-                calibrationSlotsView
-                    .padding(.top, 8)
-
-                Spacer()
-
-                HStack(spacing: 12) {
-                    if onboarding.calibrationComplete {
-                        Button {
-                            onboarding.finishRecalibration()
-                            viewModel.resumeWakeWordIfNeeded()
-                        } label: {
-                            Text("done")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(.white.opacity(0.06))
-                                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                                )
-                        }
-                    } else {
-                        Button {
-                            viewModel.wakeWordDetector.pause()
-                            onboarding.recordCalibrationSample()
-                            Task { @MainActor in
-                                while onboarding.isRecordingSample {
-                                    try? await Task.sleep(for: .milliseconds(100))
-                                }
-                                try? await Task.sleep(for: .milliseconds(500))
-                                viewModel.resumeWakeWordIfNeeded()
-                            }
-                        } label: {
-                            Text("tap to record")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(.white.opacity(0.06))
-                                        .stroke(.white.opacity(0.1), lineWidth: 0.5)
-                                )
-                        }
-                        .disabled(onboarding.isRecordingSample)
-                        .opacity(onboarding.isRecordingSample ? 0.4 : 1)
-                    }
-
-                    Button {
-                        onboarding.cancelRecalibration()
-                        viewModel.resumeWakeWordIfNeeded()
-                    } label: {
-                        Text("cancel")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.35))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                    }
-                }
-                .padding(.bottom, 80)
-            }
-        }
-        .transition(.opacity)
     }
 
     // MARK: - Normal Content
@@ -578,8 +364,6 @@ struct HomeView: View {
                 await requestSpeechAndMicrophoneAccess()
                 onboarding.advance()
             }
-        case .wakeWord:
-            break
         case .calendar:
             Task { @MainActor in
                 _ = await EventKitManager.shared.requestAccess()

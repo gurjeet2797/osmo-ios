@@ -45,6 +45,34 @@ final class NotificationManager: Sendable {
         }
     }
 
+    // MARK: - Proactive Notifications
+
+    func scheduleProactiveNotifications(_ notifications: [PendingNotification]) async {
+        let hasAccess = await requestAccess()
+        guard hasAccess else { return }
+
+        for notification in notifications {
+            let content = UNMutableNotificationContent()
+            content.title = notification.title
+            content.body = notification.body
+            content.sound = .default
+            content.categoryIdentifier = "PROACTIVE"
+
+            // Fire immediately since the backend already determined the right time
+            let request = UNNotificationRequest(
+                identifier: "proactive-\(notification.id)",
+                content: content,
+                trigger: nil
+            )
+
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                // Silently fail for individual notifications
+            }
+        }
+    }
+
     // MARK: - Private
 
     private func scheduleNotification(_ action: DeviceAction) async -> DeviceActionResult {

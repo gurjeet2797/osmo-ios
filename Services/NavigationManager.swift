@@ -1,5 +1,4 @@
 import Foundation
-import MapKit
 import UIKit
 
 final class NavigationManager: Sendable {
@@ -35,35 +34,44 @@ final class NavigationManager: Sendable {
         }
 
         let travelMode = action.args["travel_mode"]?.stringValue ?? "driving"
-
-        // Map travel mode to Apple Maps direction mode
-        let directionsMode: String
-        switch travelMode.lowercased() {
-        case "transit":
-            directionsMode = MKLaunchOptionsDirectionsModeTransit
-        case "walking":
-            directionsMode = MKLaunchOptionsDirectionsModeWalking
-        default:
-            directionsMode = MKLaunchOptionsDirectionsModeDriving
-        }
-
-        // URL-encode the destination and open via maps:// URL for simplicity
         let encoded = destination.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? destination
-        let modeParam: String
+
+        // Map travel mode to Google Maps parameter
+        let googleMode: String
         switch travelMode.lowercased() {
-        case "transit": modeParam = "r"
-        case "walking": modeParam = "w"
-        default: modeParam = "d"
+        case "transit": googleMode = "transit"
+        case "walking": googleMode = "walking"
+        default: googleMode = "driving"
         }
 
-        if let url = URL(string: "maps://?daddr=\(encoded)&dirflg=\(modeParam)") {
-            await UIApplication.shared.open(url)
+        // Try Google Maps app first
+        if let appURL = URL(string: "comgooglemaps://?daddr=\(encoded)&directionsmode=\(googleMode)"),
+           UIApplication.shared.canOpenURL(appURL) {
+            await UIApplication.shared.open(appURL)
             return DeviceActionResult(
                 actionId: action.actionId,
                 idempotencyKey: action.idempotencyKey,
                 success: true,
                 result: [
                     "opened_maps": .bool(true),
+                    "app": .string("google_maps"),
+                    "destination": .string(destination),
+                    "travel_mode": .string(travelMode),
+                ],
+                error: nil
+            )
+        }
+
+        // Fall back to Google Maps web (opens in Safari)
+        if let webURL = URL(string: "https://www.google.com/maps/dir/?api=1&destination=\(encoded)&travelmode=\(googleMode)") {
+            await UIApplication.shared.open(webURL)
+            return DeviceActionResult(
+                actionId: action.actionId,
+                idempotencyKey: action.idempotencyKey,
+                success: true,
+                result: [
+                    "opened_maps": .bool(true),
+                    "app": .string("safari_google_maps"),
                     "destination": .string(destination),
                     "travel_mode": .string(travelMode),
                 ],
@@ -76,7 +84,7 @@ final class NavigationManager: Sendable {
             idempotencyKey: action.idempotencyKey,
             success: false,
             result: [:],
-            error: "Could not open Maps"
+            error: "Could not open Google Maps"
         )
     }
 }

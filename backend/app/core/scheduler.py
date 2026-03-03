@@ -15,6 +15,8 @@ def start_scheduler() -> AsyncIOScheduler:
 
     from app.core.jobs import analyze_habits
     from app.core.briefing import prepare_all_briefings
+    from app.core.indexer import index_user_data
+    from app.core.proactive import generate_proactive_notifications
 
     _scheduler = AsyncIOScheduler()
 
@@ -30,9 +32,23 @@ def start_scheduler() -> AsyncIOScheduler:
         id="morning_briefings",
         replace_existing=True,
     )
+    _scheduler.add_job(
+        index_user_data,
+        CronTrigger(hour="*/6", minute=15),  # Every 6 hours at :15
+        id="index_user_data",
+        replace_existing=True,
+    )
+    _scheduler.add_job(
+        generate_proactive_notifications,
+        CronTrigger(hour="*", minute=45),  # Every hour at :45
+        id="proactive_notifications",
+        replace_existing=True,
+    )
 
     _scheduler.start()
-    log.info("scheduler.started", jobs=["analyze_habits", "morning_briefings"])
+    log.info("scheduler.started", jobs=[
+        "analyze_habits", "morning_briefings", "index_user_data", "proactive_notifications",
+    ])
     return _scheduler
 
 

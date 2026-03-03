@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import attachments, auth, calendar, command, health, suggestions
+from app.api import attachments, auth, calendar, command, health, notifications, openclaw, suggestions
 from app.config import settings
 from app.db.session import engine, redis_pool
 
@@ -68,3 +68,5 @@ app.include_router(command.router, prefix="/command", tags=["command"])
 app.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
 app.include_router(attachments.router, prefix="/attachments", tags=["attachments"])
 app.include_router(suggestions.router, prefix="/suggestions", tags=["suggestions"])
+app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+app.include_router(openclaw.router, prefix="/openclaw", tags=["openclaw"])

@@ -80,16 +80,18 @@ struct ContentView: View {
                 viewModel.fetchSuggestions()
                 viewModel.fetchBriefing()
                 LocationManager.shared.requestPermissionAndStart()
-                viewModel.setupWakeWordDetection()
+                viewModel.checkForProactiveNotifications()
+            }
+            .task {
+                // Periodically check for proactive notifications (every 30 min)
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(1800))
+                    viewModel.checkForProactiveNotifications()
+                }
             }
             .onChange(of: scenePhase) { _, newPhase in
-                switch newPhase {
-                case .active:
-                    viewModel.resumeWakeWordIfNeeded()
-                case .inactive, .background:
-                    viewModel.wakeWordDetector.pause()
-                @unknown default:
-                    break
+                if newPhase == .active {
+                    viewModel.checkForProactiveNotifications()
                 }
             }
     }

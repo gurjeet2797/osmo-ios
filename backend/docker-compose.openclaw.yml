@@ -20,10 +20,11 @@ services:
       - "18790:18789"
     environment:
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_BIND=lan
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     volumes:
-      - openclaw-workspace:/home/node/.openclaw/workspace
+      - openclaw-data:/home/node/.openclaw
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:18789/health"]
@@ -33,5 +34,5 @@ services:
       start_period: 20s
 
 volumes:
-  openclaw-workspace:
-    name: osmo-openclaw-workspace
+  openclaw-data:
+    name: osmo-openclaw-data

@@ -45,31 +45,41 @@ class OpenClawClient:
         """
         Send a message to OpenClaw and return the text response.
 
+        Uses the OpenResponses-compatible /v1/responses endpoint.
         Returns None if OpenClaw is disabled, unreachable, or returns an error.
         Callers should fall back to the local planner on None.
         """
         if not settings.openclaw_enabled:
             return None
 
-        payload: dict[str, Any] = {"message": text, "sessionId": session_id}
+        # Build the input with optional context prefix
         if context:
-            # Embed context as a prefix so OpenClaw has full situational awareness
             context_str = "\n".join(f"{k}: {v}" for k, v in context.items())
-            payload["message"] = f"[Context]\n{context_str}\n\n[User request]\n{text}"
+            full_input = f"[Context]\n{context_str}\n\n[User request]\n{text}"
+        else:
+            full_input = text
+
+        payload: dict[str, Any] = {
+            "model": "openclaw",
+            "input": full_input,
+            "user": session_id,
+        }
 
         try:
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 resp = await client.post(
-                    f"{self.base_url}/message",
+                    f"{self.base_url}/v1/responses",
                     headers=self._headers,
                     json=payload,
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                # OpenClaw returns {"response": "..."} or plain text
-                if isinstance(data, dict):
-                    return data.get("response") or data.get("text") or str(data)
-                return str(data)
+                # OpenResponses format: {output: [{content: [{text: "..."}]}]}
+                for output_item in data.get("output", []):
+                    for content_block in output_item.get("content", []):
+                        if content_block.get("type") == "output_text":
+                            return content_block["text"]
+                return None
 
         except httpx.ConnectError:
             logger.warning("OpenClaw unreachable at %s — falling back to local planner", self.base_url)
@@ -92,13 +102,15 @@ class OpenClawClient:
 
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
-                resp = await client.get(
-                    f"{self.base_url}/health",
+                # Use the responses endpoint with a trivial ping to verify reachability
+                resp = await client.post(
+                    f"{self.base_url}/v1/responses",
                     headers=self._headers,
+                    json={"model": "openclaw", "input": "ping", "max_output_tokens": 1},
                 )
                 return {
                     "enabled": True,
-                    "reachable": True,
+                    "reachable": resp.status_code < 500,
                     "status_code": resp.status_code,
                     "url": self.base_url,
                 }

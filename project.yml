@@ -80,10 +80,6 @@ targets:
         group: Services
       - path: Services/SpeechRecognizer.swift
         group: Services
-      - path: Services/VoiceCalibrator.swift
-        group: Services
-      - path: Services/WakeWordDetector.swift
-        group: Services
       - path: Services/ReminderManager.swift
         group: Services
       - path: Services/NotificationManager.swift
@@ -138,3 +134,8 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Osmo saves captured photos and videos to your photo library."
         INFOPLIST_KEY_NSAppleMusicUsageDescription: "Osmo controls music playback through Apple Music."
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Osmo uses your location for navigation, local search, and commute estimates."
+    info:
+      path: Info.plist
+      properties:
+        LSApplicationQueriesSchemes:
+          - comgooglemaps

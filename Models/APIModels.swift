@@ -230,6 +230,26 @@ struct BriefingResponse: Codable, Sendable {
     }
 }
 
+// MARK: - Proactive Notifications
+
+struct PendingNotification: Codable, Sendable, Identifiable {
+    let id: String
+    let title: String
+    let body: String
+    let suggestedActions: [String]
+    let fireAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, body
+        case suggestedActions = "suggested_actions"
+        case fireAt = "fire_at"
+    }
+}
+
+struct NotificationDeliveredRequest: Codable, Sendable {
+    let ids: [String]
+}
+
 // MARK: - API Error
 
 struct APIErrorResponse: Codable, Sendable {

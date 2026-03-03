@@ -33,12 +33,6 @@ final class AppViewModel {
     var statusMessage: String?
     private var statusDismissTask: Task<Void, Never>?
 
-    // Wake word
-    let wakeWordDetector = WakeWordDetector()
-    var isWakeWordEnabled: Bool {
-        didSet { UserDefaults.standard.set(isWakeWordEnabled, forKey: "wakeWordEnabled") }
-    }
-
     // Morning briefing
     var briefingText: String?
 
@@ -60,9 +54,7 @@ final class AppViewModel {
     let apiClient = APIClient()
     let conversationStore = ConversationStore()
 
-    init() {
-        self.isWakeWordEnabled = UserDefaults.standard.object(forKey: "wakeWordEnabled") as? Bool ?? true
-    }
+    init() {}
 
     // MARK: - Orb Phase
 
@@ -126,36 +118,22 @@ final class AppViewModel {
         }
     }
 
-    // MARK: - Wake Word
+    // MARK: - Proactive Notifications
 
-    func setupWakeWordDetection() {
-        wakeWordDetector.onWakeWord = { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                guard self.orbPhase == .idle, !self.isRecording, !self.isLoading else { return }
-                // Haptic feedback on wake word detection
-                let generator = UIImpactFeedbackGenerator(style: .medium)
-                generator.impactOccurred()
-                self.startRecording()
+    func checkForProactiveNotifications() {
+        Task {
+            do {
+                let notifications = try await apiClient.fetchPendingNotifications()
+                guard !notifications.isEmpty else { return }
+
+                await NotificationManager.shared.scheduleProactiveNotifications(notifications)
+
+                let ids = notifications.map(\.id)
+                try await apiClient.markNotificationsDelivered(ids)
+            } catch {
+                // Silently fail — notifications are best-effort
             }
         }
-
-        // Request permissions then start listening
-        Task {
-            let authorized = await wakeWordDetector.requestAuthorization()
-            guard authorized, isWakeWordEnabled else { return }
-            wakeWordDetector.setEnabled(true)
-        }
-    }
-
-    func toggleWakeWord(_ enabled: Bool) {
-        isWakeWordEnabled = enabled
-        wakeWordDetector.setEnabled(enabled)
-    }
-
-    func resumeWakeWordIfNeeded() {
-        guard isWakeWordEnabled else { return }
-        wakeWordDetector.resume()
     }
 
     func fetchUpcomingEvents() {
@@ -218,13 +196,9 @@ final class AppViewModel {
     // MARK: - Recording
 
     func startRecording() {
-        // Pause wake word detector to release the audio session
-        wakeWordDetector.pause()
-
         // Gate: require authentication before recording
         if let auth = authManager, !auth.isAuthenticated {
             Task { await auth.signInWithGoogle() }
-            resumeWakeWordIfNeeded()
             return
         }
 
@@ -291,7 +265,6 @@ final class AppViewModel {
         guard !text.isEmpty else {
             orbPhase = .idle
             liveTranscript = ""
-            resumeWakeWordIfNeeded()
             return
         }
 
@@ -418,7 +391,6 @@ final class AppViewModel {
         silenceTimer = nil
         orbPhase = .idle
         speechRecognizer.stopRecording()
-        resumeWakeWordIfNeeded()
     }
 
     func resumeConversation(_ conversation: Conversation) {
@@ -466,7 +438,6 @@ final class AppViewModel {
             try? await Task.sleep(for: .seconds(seconds))
             if !Task.isCancelled && (orbPhase == .success || orbPhase == .error) {
                 orbPhase = .idle
-                resumeWakeWordIfNeeded()
             }
         }
     }

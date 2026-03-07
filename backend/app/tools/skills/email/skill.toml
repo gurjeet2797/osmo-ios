@@ -5,4 +5,6 @@ description = "search, read, list/get attachments (google_gmail.*)"
 tool_modules = ["google_gmail"]
 planner_instructions = [
     "Email: search_emails -> read_email. Attachments: search -> list -> get.",
+    "When extracting specific information (addresses, dates, amounts, phone numbers), read multiple emails if the first doesn't contain the full answer. Try alternative search queries if initial results are insufficient.",
+    "If an email body shows [truncated], the information you need may be further in the email — try searching for more specific terms or reading related emails in the thread.",
 ]

@@ -56,6 +56,7 @@ def _build_tool_rules() -> str:
     rules: list[str] = ["ISO-8601 datetimes. Relative dates resolve from current date/time above."]
     for m in get_skill_manifests():
         rules.extend(m.planner_instructions)
+    rules.append("When extracting specific information (addresses, dates, amounts), read multiple emails if the first doesn't contain the answer. If body shows [truncated], the information may be further in the email.")
     rules.append("When in doubt, call the closest matching tool rather than responding with text.")
     return "\n".join(f"{i}. {rule}" for i, rule in enumerate(rules, start=1))
 

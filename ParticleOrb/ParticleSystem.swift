@@ -45,7 +45,7 @@ nonisolated enum ParticlePhysics: Sendable {
     static let maxVelocity: Float = 120.0
     static let hueShiftRate: Float = 0.0
     static let morphDuration: Double = 0.35
-    static let noiseStrength: Float = 6.0
+    static let noiseStrength: Float = 3.5
     static let noiseSpeed: Float = 1.2
 }
 
@@ -59,6 +59,9 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
     private var touchPoint: SIMD2<Float>?
     private var touchInfluence: Float = 0
     private var touchActive: Bool = false
+
+    // Explosion
+    private(set) var isExploding: Bool = false
 
     // Morph controller (replaces inline morph logic)
     let morphController = MorphController()
@@ -160,7 +163,13 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
 
         // Soft spring force using modulation stiffness/damping
         let displacement = p.targetPosition - p.position
-        var force = displacement * modulation.springStiffness - p.velocity * modulation.springDamping
+        var force: SIMD2<Float>
+        if isExploding {
+            // During explosion: only apply light damping, no spring pull
+            force = -p.velocity * 0.5
+        } else {
+            force = displacement * modulation.springStiffness - p.velocity * modulation.springDamping
+        }
 
         // Touch repulsion
         if let touch = touchPoint, touchInfluence > 0.01 {
@@ -277,6 +286,25 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
         transitionToSwirl(at: time)
     }
 
+    // MARK: - Explosion
+
+    func explode() {
+        isExploding = true
+        for i in particles.indices {
+            let pos = particles[i].position
+            let dist = simd_length(pos)
+            let dir: SIMD2<Float> = dist > 0.001 ? simd_normalize(pos) : SIMD2<Float>(Float.random(in: -1...1), Float.random(in: -1...1))
+            let speed = Float.random(in: 200...400)
+            let jitter = SIMD2<Float>(Float.random(in: -50...50), Float.random(in: -50...50))
+            particles[i].velocity = dir * speed + jitter
+        }
+    }
+
+    func converge() {
+        isExploding = false
+        // Particles will spring back to targets via existing physics
+    }
+
     // MARK: - Touch
 
     func applyTouch(at point: SIMD2<Float>) {
@@ -293,15 +321,8 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
     private static func generateParticles(count: Int) -> [Particle] {
         (0..<count).map { _ in
             let angle = Float.random(in: 0...(Float.pi * 2))
-            let ring = Float.random(in: 0...1)
-            let radius: Float
-            if ring < 0.5 {
-                radius = Float.random(in: 12...22)
-            } else if ring < 0.8 {
-                radius = Float.random(in: 22...32)
-            } else {
-                radius = Float.random(in: 32...40)
-            }
+            // Ring/donut distribution — particles concentrated in an annular band
+            let radius = Float.random(in: 26...38)
 
             let pos = SIMD2<Float>(cos(angle) * radius, sin(angle) * radius)
 

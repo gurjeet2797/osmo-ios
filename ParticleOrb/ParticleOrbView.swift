@@ -44,6 +44,8 @@ struct ParticleOrbView: View {
         switch viewModel.orbPhase {
         case .listening, .transcribing:
             return 1.0
+        case .cameraTransition:
+            return 1.0
         default:
             return 0.0
         }
@@ -95,6 +97,7 @@ struct ParticleOrbView: View {
                             let dy = value.location.y - startLoc.y
                             let dist = sqrt(dx * dx + dy * dy)
                             if held >= 0.5 && dist < 15 {
+                                system.explode()
                                 viewModel.startPhotoThenVoice()
                                 dragStartTime = nil
                                 dragStartLocation = nil
@@ -141,6 +144,8 @@ struct ParticleOrbView: View {
                 countChangeTime = Date().timeIntervalSinceReferenceDate
                 previousVisibleCount = 0
             }
+            .opacity(viewModel.orbPhase == .cameraTransition ? 0.0 : 1.0)
+            .animation(.easeInOut(duration: 0.6).delay(0.1), value: viewModel.orbPhase == .cameraTransition)
             .onChange(of: visibleParticleCount) { oldCount, newCount in
                 guard newCount > 0, newCount != oldCount else { return }
                 previousVisibleCount = oldCount
@@ -166,7 +171,12 @@ struct ParticleOrbView: View {
                     system.transitionToSuccess()
                 case .error:
                     system.transitionToError()
+                case .cameraTransition:
+                    break // explosion already triggered by long-press
                 case .idle:
+                    if system.isExploding {
+                        system.converge()
+                    }
                     system.transitionToSwirl()
                 }
             }

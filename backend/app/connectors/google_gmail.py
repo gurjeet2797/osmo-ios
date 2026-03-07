@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 
 log = structlog.get_logger()
 
-MAX_BODY_CHARS = 8000
+MAX_BODY_CHARS = 16000
 
 
 def _service(credentials: Credentials):

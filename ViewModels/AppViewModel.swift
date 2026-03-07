@@ -76,9 +76,13 @@ final class AppViewModel {
 
     // Vision — captured photo for next command
     var capturedPhoto: UIImage?
+    var cameraBlurAmount: CGFloat = 0
 
     let apiClient = APIClient()
     let conversationStore = ConversationStore()
+
+    private var lastWidgetFetch: Date?
+    private var lastEventFetch: Date?
 
     init() {}
 
@@ -91,6 +95,7 @@ final class AppViewModel {
         case sending
         case success
         case error
+        case cameraTransition
     }
 
     // MARK: - Suggestions (dynamically updated from backend)
@@ -162,6 +167,8 @@ final class AppViewModel {
     }
 
     func fetchWidgetData() {
+        if let last = lastWidgetFetch, Date().timeIntervalSince(last) < 300 { return }
+        lastWidgetFetch = Date()
         Task {
             do {
                 let data = try await apiClient.fetchWidgetData()
@@ -245,12 +252,23 @@ final class AppViewModel {
     // MARK: - Vision (Photo → AI)
 
     func startPhotoThenVoice() {
-        showVisionCamera = true
+        orbPhase = .cameraTransition
+        withAnimation(.easeInOut(duration: 0.4)) {
+            cameraBlurAmount = 20
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(0.8))
+            showVisionCamera = true
+        }
     }
 
     func onPhotoCaptured(_ image: UIImage) {
         capturedPhoto = image
         showVisionCamera = false
+        withAnimation(.easeInOut(duration: 0.5)) {
+            cameraBlurAmount = 0
+        }
+        orbPhase = .idle
         // Automatically start recording after capture
         startRecording()
     }
@@ -273,11 +291,13 @@ final class AppViewModel {
         }
     }
 
-    func fetchUpcomingEvents() {
+    func fetchUpcomingEvents(days: Int = 1) {
+        if let last = lastEventFetch, Date().timeIntervalSince(last) < 300 { return }
+        lastEventFetch = Date()
         isLoadingEvents = true
         Task {
             do {
-                let events = try await apiClient.fetchUpcomingEvents()
+                let events = try await apiClient.fetchUpcomingEvents(days: days)
                 upcomingEvents = events
             } catch {
                 // Silently fail — the view shows placeholder text

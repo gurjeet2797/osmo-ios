@@ -69,12 +69,6 @@ _LOCAL_ONLY_PATTERNS: list[re.Pattern[str]] = [
 _DELEGATION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(p, re.IGNORECASE)
     for p in [
-        # Memory / persistence
-        r"\bremind me\b",
-        r"\bcheck (back|on|later)\b",
-        r"\bfollow[- ]up\b",
-        r"\bkeep track\b",
-        r"\bremember (that|this|to)\b",
         # Briefing / prep
         r"\bprepare (a |my |for )\b",
         r"\bmorning briefing\b",
@@ -83,13 +77,10 @@ _DELEGATION_PATTERNS: list[re.Pattern[str]] = [
         r"\bagenda for\b",
         # Research / investigation
         r"\bresearch\b",
-        r"\bfind out\b",
         r"\binvestigate\b",
         r"\bbackground on\b",
         r"\bdeep dive\b",
-        r"\bwho (is|are|was|were)\b",
         r"\bwhat do (I|you) know about\b",
-        r"\bhistory of\b",
         # Drafting / summarization
         r"\bdraft (an?|the|my)\b",
         r"\bsummarize\b",
@@ -99,15 +90,10 @@ _DELEGATION_PATTERNS: list[re.Pattern[str]] = [
         r"\bpros and cons\b",
         r"\bstep by step\b",
         r"\bbreak (it |this )?down\b",
-        r"\bwhat should I\b",
-        r"\bshould I\b.*\bor\b",
         # Analysis
         r"\banalyze\b",
-        r"\bcompare\b",
         r"\boptimize\b",
-        r"\bevaluate\b",
         r"\bassess\b",
-        r"\breflect\b",
         # Reviews / retrospectives
         r"\b(weekly|daily|monthly) review\b",
         r"\breview (my|the|this) (week|day|month|quarter)\b",
@@ -115,14 +101,10 @@ _DELEGATION_PATTERNS: list[re.Pattern[str]] = [
         r"\bretro(spective)?\b",
         # Project / strategy
         r"\bstrategy\b",
-        r"\bplan (for|out|a|my|the)\b",
         r"\bproject plan\b",
         r"\broadmap\b",
         r"\blong[- ]term\b",
-        r"\bover (the )?(next|last|past)\b",
-        r"\bmy preferences?\b",
         # Explicit complexity markers
-        r"\bin detail\b",
         r"\bthoroughly\b",
         r"\bcomprehensive\b",
     ]

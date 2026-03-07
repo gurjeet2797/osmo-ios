@@ -347,9 +347,11 @@ struct HomeView: View {
                         .font(.system(size: 13, weight: .light))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, minHeight: 300, alignment: .center)
                         .padding(.bottom, 20)
                 }
                 .frame(maxHeight: 420)
+                .scrollBounceBehavior(.basedOnSize)
                 .scrollIndicators(.hidden)
                 .transition(.opacity)
                 .onTapGesture {

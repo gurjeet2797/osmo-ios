@@ -203,7 +203,7 @@ struct ControlCenterView: View {
             }
         }
         .task {
-            viewModel.fetchUpcomingEvents()
+            viewModel.fetchUpcomingEvents(days: 7)
         }
     }
 
@@ -237,14 +237,38 @@ struct ControlCenterView: View {
 
     private var commuteContent: some View {
         VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "car.fill")
-                .font(.system(size: 32))
-                .foregroundStyle(.white.opacity(0.15))
-            Text("Coming soon")
-                .font(.system(size: 13, weight: .light, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.25))
-            Spacer()
+            if let commute = viewModel.commuteWidgetData,
+               let duration = commute.duration {
+                Spacer()
+                Text(duration)
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
+                if let destination = commute.destination {
+                    Text(destination)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                if let distance = commute.distance {
+                    Text(distance)
+                        .font(.system(size: 12, weight: .light, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+                Spacer()
+            } else {
+                Spacer()
+                Image(systemName: "car.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.white.opacity(0.15))
+                Text("Say \"my work address is...\" to enable commute estimates")
+                    .font(.system(size: 12, weight: .light, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.25))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+                Spacer()
+            }
+        }
+        .task {
+            viewModel.fetchWidgetData()
         }
     }
 

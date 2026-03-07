@@ -155,6 +155,8 @@ nonisolated final class ParticleStateMachine: @unchecked Sendable {
             return (.success, .emphatic)
         case .error:
             return (.error, .emphatic)
+        case .cameraTransition:
+            return (.idle, .emphatic)
         }
     }
 }

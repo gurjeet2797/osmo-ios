@@ -21,11 +21,25 @@ struct ContentView: View {
             .sheet(isPresented: $viewModel.showPaywall) {
                 PaywallView()
             }
-            .fullScreenCover(isPresented: $viewModel.showVisionCamera) {
-                VisionCameraView { image in
-                    viewModel.onPhotoCaptured(image)
+            .overlay {
+                if viewModel.showVisionCamera || viewModel.orbPhase == .cameraTransition {
+                    Color.black.opacity(0.5)
+                        .blur(radius: 20)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.showVisionCamera)
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.orbPhase)
                 }
-                .ignoresSafeArea()
+            }
+            .overlay {
+                if viewModel.showVisionCamera {
+                    VisionCameraView { image in
+                        viewModel.onPhotoCaptured(image)
+                    }
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.showVisionCamera)
+                }
             }
             .fullScreenCover(item: $viewModel.pendingCameraAction) { action in
                 CameraView(action: action) {

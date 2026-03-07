@@ -426,7 +426,11 @@ async def handle_command(
     pref_mgr = PreferenceManager(db, str(user.id))
     km = KnowledgeManager(db, str(user.id))
     prefs = await pref_mgr.get_all()
-    facts = await km.get_all()
+    try:
+        facts = await km.get_all()
+    except Exception:
+        log.debug("knowledge.load_failed", exc_info=True)
+        facts = []
     pref_block = PreferenceManager.build_context_block(prefs)
     knowledge_block = KnowledgeManager.build_context_block(facts)
 

@@ -10,9 +10,9 @@ final class DeviceControlManager: Sendable {
     func executeAction(_ action: DeviceAction) async -> DeviceActionResult {
         switch action.toolName {
         case "ios_device.copy_to_clipboard":
-            return await copyToClipboard(action)
+            return copyToClipboard(action)
         case "ios_device.set_brightness":
-            return await setBrightness(action)
+            return setBrightness(action)
         case "ios_device.flashlight":
             return toggleFlashlight(action)
         default:

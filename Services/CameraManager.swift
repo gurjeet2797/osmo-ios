@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 import Photos
 import SwiftUI
@@ -43,7 +43,7 @@ final class CameraManager: Sendable {
 
 struct CameraView: View {
     let action: DeviceAction
-    let onDismiss: () -> Void
+    let onDismiss: @MainActor () -> Void
 
     var body: some View {
         _CameraHostView(action: action, onDismiss: onDismiss)
@@ -54,7 +54,7 @@ struct CameraView: View {
 
 private struct _CameraHostView: UIViewControllerRepresentable {
     let action: DeviceAction
-    let onDismiss: () -> Void
+    let onDismiss: @MainActor () -> Void
 
     func makeUIViewController(context: Context) -> AutoCaptureViewController {
         AutoCaptureViewController(action: action, onDismiss: onDismiss)
@@ -65,10 +65,10 @@ private struct _CameraHostView: UIViewControllerRepresentable {
 
 final class AutoCaptureViewController: UIViewController {
     private let action: DeviceAction
-    private let onDismiss: () -> Void
+    private let onDismiss: @MainActor () -> Void
     private let isVideo: Bool
 
-    private let session = AVCaptureSession()
+    nonisolated(unsafe) private let session = AVCaptureSession()
     private var photoOutput: AVCapturePhotoOutput?
     private var movieOutput: AVCaptureMovieFileOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
@@ -81,7 +81,7 @@ final class AutoCaptureViewController: UIViewController {
     private var recordingTimer: Timer?
     private var maxDuration: TimeInterval
 
-    init(action: DeviceAction, onDismiss: @escaping () -> Void) {
+    init(action: DeviceAction, onDismiss: @escaping @MainActor () -> Void) {
         self.action = action
         self.onDismiss = onDismiss
         self.isVideo = action.toolName == "ios_camera.record_video"
@@ -200,19 +200,16 @@ final class AutoCaptureViewController: UIViewController {
     // MARK: - Countdown → auto capture
 
     private func startCountdown() {
-        var remaining = 2
-        countdownLabel?.text = "\(remaining)"
+        countdownLabel?.text = "2"
 
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            guard let self else { timer.invalidate(); return }
-            remaining -= 1
-            if remaining > 0 {
-                self.countdownLabel?.text = "\(remaining)"
-            } else {
-                timer.invalidate()
-                self.countdownLabel?.text = ""
-                self.capture()
-            }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard let self else { return }
+            self.countdownLabel?.text = "1"
+            try? await Task.sleep(for: .seconds(1))
+            guard let self else { return }
+            self.countdownLabel?.text = ""
+            self.capture()
         }
     }
 
@@ -253,7 +250,9 @@ final class AutoCaptureViewController: UIViewController {
 
         // Auto-stop after max duration
         recordingTimer = Timer.scheduledTimer(withTimeInterval: maxDuration, repeats: false) { [weak self] _ in
-            self?.stopRecording()
+            Task { @MainActor [weak self] in
+                self?.stopRecording()
+            }
         }
     }
 

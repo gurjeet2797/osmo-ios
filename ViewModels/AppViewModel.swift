@@ -506,7 +506,7 @@ final class AppViewModel {
                 orbPhase = .success
                 returnToIdleAfterDelay(seconds: 1.5)
             } catch let error as APIError {
-                showStatus("Failed: \(error.localizedDescription ?? "Unknown error")")
+                showStatus("Failed: \(error.localizedDescription)")
                 dismissStatusAfterDelay(seconds: 4)
                 handleError(error)
                 orbPhase = .error
@@ -707,7 +707,7 @@ final class AppViewModel {
         errorMessage = error.localizedDescription
 
         let errorMsg = Message(
-            content: error.localizedDescription ?? "Something went wrong. Please try again.",
+            content: error.localizedDescription,
             isUser: false,
             tags: ["error"]
         )

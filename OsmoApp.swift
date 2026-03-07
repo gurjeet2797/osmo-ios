@@ -22,7 +22,7 @@ struct OsmoApp: App {
                     // Request notification permission and register for APNs
                     let granted = await NotificationManager.shared.requestAccess()
                     if granted {
-                        await UIApplication.shared.registerForRemoteNotifications()
+                        UIApplication.shared.registerForRemoteNotifications()
                     }
                 }
         }

@@ -47,7 +47,7 @@ final class AppLauncherManager: Sendable {
     func executeAction(_ action: DeviceAction) async -> DeviceActionResult {
         switch action.toolName {
         case "ios_app_launcher.open_app":
-            return await openApp(action)
+            return openApp(action)
         default:
             return DeviceActionResult(
                 actionId: action.actionId,

@@ -82,14 +82,39 @@ async def _fetch_email_summary(user: User) -> EmailSummary:
 
 
 async def _fetch_commute(user: User, db: AsyncSession) -> CommuteEstimate:
-    """Fetch commute estimate using stored home/work preferences."""
+    """Fetch commute estimate using stored preferences or knowledge facts."""
     try:
         from app.core.preference_manager import PreferenceManager
+        from app.core.knowledge import KnowledgeManager
         mgr = PreferenceManager(db, str(user.id))
+        km = KnowledgeManager(db, str(user.id))
         prefs = await mgr.get_all()
 
+        # Check preferences first, then fall back to knowledge facts
         destination = prefs.get("work_address") or prefs.get("commute_destination")
         origin = prefs.get("home_address") or prefs.get("commute_origin")
+
+        if not destination or not origin:
+            try:
+                facts = await km.get_all()
+                fact_map = {f.key: f.value for f in facts}
+                if not destination:
+                    # Try exact keys, then fuzzy match on any key containing "work" and "address"
+                    destination = fact_map.get("work_address") or fact_map.get("work-address")
+                    if not destination:
+                        for k, v in fact_map.items():
+                            if "work" in k.lower() and "address" in k.lower():
+                                destination = v
+                                break
+                if not origin:
+                    origin = fact_map.get("home_address") or fact_map.get("home-address")
+                    if not origin:
+                        for k, v in fact_map.items():
+                            if "home" in k.lower() and "address" in k.lower():
+                                origin = v
+                                break
+            except Exception:
+                log.debug("widget.commute_facts_failed", exc_info=True)
 
         if not destination:
             return CommuteEstimate(destination=None)

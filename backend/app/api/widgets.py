@@ -98,41 +98,56 @@ async def _fetch_commute(user: User, db: AsyncSession) -> CommuteEstimate:
             try:
                 facts = await km.get_all()
                 fact_map = {f.key: f.value for f in facts}
+                log.info("widget.commute_facts", keys=list(fact_map.keys()))
                 if not destination:
-                    # Try exact keys, then fuzzy match on any key containing "work" and "address"
-                    destination = fact_map.get("work_address") or fact_map.get("work-address")
+                    destination = (
+                        fact_map.get("work_address")
+                        or fact_map.get("work-address")
+                        or fact_map.get("personal:work_address")
+                        or fact_map.get("personal:workplace_address")
+                    )
                     if not destination:
                         for k, v in fact_map.items():
-                            if "work" in k.lower() and "address" in k.lower():
+                            if "work" in k.lower() and ("address" in k.lower() or "location" in k.lower()):
                                 destination = v
                                 break
                 if not origin:
-                    origin = fact_map.get("home_address") or fact_map.get("home-address")
+                    origin = (
+                        fact_map.get("home_address")
+                        or fact_map.get("home-address")
+                        or fact_map.get("personal:home_address")
+                    )
                     if not origin:
                         for k, v in fact_map.items():
-                            if "home" in k.lower() and "address" in k.lower():
+                            if "home" in k.lower() and ("address" in k.lower() or "location" in k.lower()):
                                 origin = v
                                 break
             except Exception:
                 log.debug("widget.commute_facts_failed", exc_info=True)
 
+        log.info("widget.commute_resolved", destination=destination, origin=origin)
+
         if not destination:
             return CommuteEstimate(destination=None)
 
-        from app.connectors.google_routes import GoogleRoutesClient
-        routes_client = GoogleRoutesClient(api_key=settings.google_routes_api_key)
-        route = routes_client.compute_route(
-            origin=origin or "current location",
-            destination=destination,
-            travel_mode="DRIVE",
-        )
-
-        return CommuteEstimate(
-            duration=route.get("duration"),
-            duration_seconds=route.get("duration_seconds"),
-            distance=route.get("distance"),
-            destination=destination,
-        )
+        # Try to get route info, but always return destination even if routes fail
+        try:
+            from app.connectors.google_routes import GoogleRoutesClient
+            routes_client = GoogleRoutesClient(api_key=settings.google_routes_api_key)
+            route = routes_client.compute_route(
+                origin=origin or "current location",
+                destination=destination,
+                travel_mode="DRIVE",
+            )
+            return CommuteEstimate(
+                duration=route.get("duration"),
+                duration_seconds=route.get("duration_seconds"),
+                distance=route.get("distance"),
+                destination=destination,
+            )
+        except Exception:
+            log.debug("widget.commute_routes_failed", user_id=str(user.id), exc_info=True)
+            return CommuteEstimate(destination=destination)
     except Exception:
         log.debug("widget.commute_failed", user_id=str(user.id), exc_info=True)
         return CommuteEstimate()

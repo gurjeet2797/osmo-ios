@@ -238,11 +238,13 @@ struct ControlCenterView: View {
     private var commuteContent: some View {
         VStack(spacing: 16) {
             if let commute = viewModel.commuteWidgetData,
-               let duration = commute.duration {
+               commute.destination != nil {
                 Spacer()
-                Text(duration)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.9))
+                if let duration = commute.duration {
+                    Text(duration)
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
                 if let destination = commute.destination {
                     Text(destination)
                         .font(.system(size: 14, weight: .medium))
@@ -250,6 +252,11 @@ struct ControlCenterView: View {
                 }
                 if let distance = commute.distance {
                     Text(distance)
+                        .font(.system(size: 12, weight: .light, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+                if commute.duration == nil {
+                    Text("Destination saved")
                         .font(.system(size: 12, weight: .light, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.35))
                 }

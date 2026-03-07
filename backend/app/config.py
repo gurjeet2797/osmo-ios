@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-4-5-20250929"
     anthropic_max_tokens: int = 4096
 
-    session_max_messages: int = 20
+    session_max_messages: int = 50
 
     google_client_id: str = ""
     google_client_secret: str = ""

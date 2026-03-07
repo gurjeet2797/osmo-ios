@@ -50,14 +50,14 @@ final class AppViewModel {
     // Tracks whether the user has tapped record this session (for title fade)
     var hasUsedRecording: Bool = false
 
-    // Silence detection — auto-send after 2s of no new speech
+    // Silence detection — auto-send after pause in speech
     private var silenceTimer: Task<Void, Never>?
 
     // Orb state
     var orbPhase: OrbPhase = .idle
 
     // Home widgets
-    var homeWidgets: [HomeWidgetType] = [.calendar, .briefing]
+    var homeWidgets: [HomeWidgetType] = [.calendar, .briefing, .email, .commute]
 
     // Subscription
     var subscriptionTier: String = "free"
@@ -358,8 +358,17 @@ final class AppViewModel {
                 if self.orbPhase == .listening && !text.isEmpty {
                     self.orbPhase = .transcribing
                 }
-                // Reset silence timer — auto-send after 2s of no new speech
+                // Reset silence timer — auto-send after 1s of no new speech
                 self.resetSilenceTimer()
+            }
+        }
+        // Apple's speech recognizer detected a complete utterance — send immediately
+        speechRecognizer.onFinalTranscript = { [weak self] text in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard self.isRecording else { return }
+                self.liveTranscript = text
+                self.stopRecordingAndSend()
             }
         }
         speechRecognizer.onError = { [weak self] errorText in
@@ -418,7 +427,7 @@ final class AppViewModel {
         // Only start timer if we have some transcript to send
         guard !liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         silenceTimer = Task {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(1))
             if !Task.isCancelled && isRecording {
                 stopRecordingAndSend()
             }
@@ -543,8 +552,8 @@ final class AppViewModel {
         responseDismissTask?.cancel()
         typewriterTask?.cancel()
         silenceTimer?.cancel()
-        // Clear server-side session so LLM starts fresh
-        Task { try? await apiClient.clearSession() }
+        // Keep server-side session intact for conversation continuity
+        // Only clear when the user explicitly wants to forget context
         silenceTimer = nil
         orbPhase = .idle
         speechRecognizer.stopRecording()
@@ -623,11 +632,11 @@ final class AppViewModel {
             for char in fullText {
                 if Task.isCancelled { return }
                 displayedResponse.append(char)
-                try? await Task.sleep(for: .milliseconds(30))
+                try? await Task.sleep(for: .milliseconds(15))
             }
-            // After typewriter finishes, auto-dismiss after 8 seconds
+            // After typewriter finishes, auto-dismiss after 12 seconds
             if !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(8))
+                try? await Task.sleep(for: .seconds(12))
                 if !Task.isCancelled {
                     lastSpokenResponse = nil
                     displayedResponse = ""

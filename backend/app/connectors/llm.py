@@ -109,9 +109,11 @@ class AnthropicLLMClient(BaseLLMClient):
         response = await self._client.messages.create(**kwargs)
         result = self._parse_response(response)
 
-        # Continuation: if truncated text (no tool calls), ask LLM to finish (1 attempt)
-        if result.stop_reason == "max_tokens" and not result.tool_calls and result.text:
-            log.info("llm.anthropic.continuation", partial_len=len(result.text))
+        # Continuation: if truncated text (no tool calls), retry up to 2 times
+        for attempt in range(2):
+            if result.stop_reason != "max_tokens" or result.tool_calls or not result.text:
+                break
+            log.info("llm.anthropic.continuation", attempt=attempt + 1, partial_len=len(result.text))
             msgs.append({"role": "assistant", "content": result.text})
             msgs.append({"role": "user", "content": "Please continue from where you left off."})
             kwargs["messages"] = msgs
@@ -214,7 +216,7 @@ class OpenAILLMClient(BaseLLMClient):
             "model": self._model,
             "messages": msgs,
             "temperature": 0.3,
-            "max_tokens": 2000,
+            "max_tokens": 4096,
         }
         if tools:
             kwargs["tools"] = tools
@@ -225,9 +227,11 @@ class OpenAILLMClient(BaseLLMClient):
         result = self._parse_response(choice.message)
         result.stop_reason = choice.finish_reason
 
-        # Continuation: if truncated text (no tool calls), ask LLM to finish (1 attempt)
-        if result.stop_reason == "length" and not result.tool_calls and result.text:
-            log.info("llm.openai.continuation", partial_len=len(result.text))
+        # Continuation: if truncated text (no tool calls), retry up to 2 times
+        for attempt in range(2):
+            if result.stop_reason != "length" or result.tool_calls or not result.text:
+                break
+            log.info("llm.openai.continuation", attempt=attempt + 1, partial_len=len(result.text))
             msgs.append({"role": "assistant", "content": result.text})
             msgs.append({"role": "user", "content": "Please continue from where you left off."})
             kwargs["messages"] = msgs
@@ -256,7 +260,7 @@ class OpenAILLMClient(BaseLLMClient):
             "model": self._model,
             "messages": msgs,
             "temperature": 0.5,
-            "max_tokens": 2000,
+            "max_tokens": 4096,
         }
         if tools:
             kwargs["tools"] = tools

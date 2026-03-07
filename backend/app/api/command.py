@@ -422,7 +422,7 @@ async def handle_command(
         await sm.save(session_messages)
         await _record_command(db, user, body, [])
         return CommandResponse(
-            spoken_response=response.text or "...",
+            spoken_response=response.text or "I'm here. What can I help with?",
             requires_confirmation=False,
             remaining_requests=remaining_requests,
         )

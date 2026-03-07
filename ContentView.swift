@@ -94,6 +94,7 @@ struct ContentView: View {
                 viewModel.fetchSubscriptionStatus()
                 LocationManager.shared.requestPermissionAndStart()
                 viewModel.fetchWeather()
+                viewModel.fetchUpcomingEvents()
                 viewModel.checkForProactiveNotifications()
             }
             .task {

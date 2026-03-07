@@ -7,6 +7,7 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
 
     // Callback for transcript updates — set by AppViewModel on MainActor
     var onTranscript: (@Sendable (String) -> Void)?
+    var onFinalTranscript: (@Sendable (String) -> Void)?
     var onError: (@Sendable (String) -> Void)?
 
     // Read-only state (set internally, read from MainActor via AppViewModel)
@@ -106,6 +107,7 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
 
         // Capture callbacks as local lets to avoid capturing self in the handler
         let transcriptCallback = self.onTranscript
+        let finalCallback = self.onFinalTranscript
         let errorCallback = self.onError
 
         // Start recognition AFTER engine is running
@@ -113,6 +115,9 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
             if let result {
                 let text = result.bestTranscription.formattedString
                 transcriptCallback?(text)
+                if result.isFinal {
+                    finalCallback?(text)
+                }
             }
             if let taskError {
                 // Suppress cancellation errors — these fire normally when stopping recording

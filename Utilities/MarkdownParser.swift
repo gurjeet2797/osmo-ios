@@ -7,6 +7,7 @@ enum MarkdownSpan: Sendable, Equatable {
     case bold(String)
     case italic(String)
     case code(String)
+    case math(String)          // inline $...$ math
 }
 
 enum MarkdownBlock: Sendable, Equatable {
@@ -15,6 +16,7 @@ enum MarkdownBlock: Sendable, Equatable {
     case bulletList([[MarkdownSpan]])
     case numberedList([[MarkdownSpan]])
     case codeBlock(language: String?, code: String)
+    case mathBlock(String)     // display $$...$$ math
     case divider
 }
 
@@ -48,6 +50,37 @@ enum MarkdownParser {
             if let heading = parseHeading(trimmed) {
                 blocks.append(heading)
                 i += 1
+                continue
+            }
+
+            // Display math block: $$...$$
+            if trimmed.hasPrefix("$$") {
+                // Collect until closing $$
+                let firstLine = String(trimmed.dropFirst(2))
+                if firstLine.hasSuffix("$$") && firstLine.count > 2 {
+                    // Single-line math block: $$expr$$
+                    let expr = String(firstLine.dropLast(2)).trimmingCharacters(in: .whitespaces)
+                    blocks.append(.mathBlock(expr))
+                    i += 1
+                    continue
+                }
+                var mathLines: [String] = []
+                if !firstLine.trimmingCharacters(in: .whitespaces).isEmpty {
+                    mathLines.append(firstLine)
+                }
+                i += 1
+                while i < lines.count {
+                    let l = lines[i].trimmingCharacters(in: .whitespaces)
+                    if l.hasSuffix("$$") {
+                        let last = String(l.dropLast(2)).trimmingCharacters(in: .whitespaces)
+                        if !last.isEmpty { mathLines.append(last) }
+                        i += 1
+                        break
+                    }
+                    mathLines.append(lines[i])
+                    i += 1
+                }
+                blocks.append(.mathBlock(mathLines.joined(separator: "\n")))
                 continue
             }
 
@@ -155,12 +188,24 @@ enum MarkdownParser {
                     continue
                 }
             }
+            // Inline math: $text$ (not $$)
+            if remaining.hasPrefix("$"), !remaining.hasPrefix("$$") {
+                let after = remaining.dropFirst(1)
+                if let end = after.range(of: "$") {
+                    let content = String(after[after.startIndex..<end.lowerBound])
+                    if !content.isEmpty && !content.contains("\n") {
+                        spans.append(.math(content))
+                        remaining = after[end.upperBound...]
+                        continue
+                    }
+                }
+            }
 
             // Plain text: consume until next special char
             var plain = ""
             while !remaining.isEmpty {
                 let ch = remaining.first!
-                if ch == "*" || ch == "`" {
+                if ch == "*" || ch == "`" || ch == "$" {
                     break
                 }
                 plain.append(ch)
@@ -192,6 +237,11 @@ enum MarkdownParser {
         // Remove code fences
         result = result.replacingOccurrences(
             of: #"```[a-zA-Z]*\n?"#, with: "", options: .regularExpression)
+        // Remove display math delimiters
+        result = result.replacingOccurrences(of: "$$", with: "")
+        // Remove inline math delimiters (single $)
+        result = result.replacingOccurrences(
+            of: #"\$([^$\n]+)\$"#, with: "$1", options: .regularExpression)
         return result
     }
 

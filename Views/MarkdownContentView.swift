@@ -53,6 +53,19 @@ struct MarkdownContentView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(.white.opacity(0.06))
                 )
+        case .mathBlock(let expr):
+            Text(expr)
+                .font(.system(size: 15, weight: .light, design: .serif))
+                .foregroundStyle(.white.opacity(0.85))
+                .italic()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.white.opacity(0.04))
+                        .stroke(.white.opacity(0.08), lineWidth: 0.5)
+                )
         case .divider:
             Rectangle()
                 .fill(.white.opacity(0.1))
@@ -94,6 +107,11 @@ struct MarkdownContentView: View {
                 return result + Text(str)
                     .font(.system(size: 14, design: .monospaced))
                     .foregroundColor(.white.opacity(0.7))
+            case .math(let str):
+                return result + Text(str)
+                    .font(.system(size: 15, weight: .light, design: .serif))
+                    .foregroundColor(.white.opacity(0.85))
+                    .italic()
             }
         }
     }

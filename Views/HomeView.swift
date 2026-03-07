@@ -342,16 +342,17 @@ struct HomeView: View {
         // Subtitle area: LLM response (typewriter), widget cards, or rotating tips
         Group {
             if viewModel.lastSpokenResponse != nil {
-                Text(MarkdownParser.stripMarkdown(viewModel.displayedResponse))
-                    .font(.system(size: 13, weight: .light))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(8)
-                    .frame(maxHeight: 160)
-                    .transition(.opacity)
-                    .onTapGesture {
-                        viewModel.showChat = true
-                    }
+                ScrollView {
+                    Text(MarkdownParser.stripMarkdown(viewModel.displayedResponse))
+                        .font(.system(size: 13, weight: .light))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxHeight: 240)
+                .transition(.opacity)
+                .onTapGesture {
+                    viewModel.showChat = true
+                }
             } else if !viewModel.homeWidgets.isEmpty {
                 homeWidgetStack
                     .transition(.opacity)

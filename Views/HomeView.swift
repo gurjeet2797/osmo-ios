@@ -161,7 +161,7 @@ struct HomeView: View {
         .sheet(isPresented: $showFAQ) {
             FAQView()
         }
-        .onAppear {
+        .task {
             runEntrance()
         }
         .onChange(of: authManager.isAuthenticated) { _, isAuth in

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o"
 
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-4-5-20250514"
+    anthropic_model: str = "claude-haiku-4-5-20251001"
     anthropic_max_tokens: int = 4096
 
     session_max_messages: int = 50

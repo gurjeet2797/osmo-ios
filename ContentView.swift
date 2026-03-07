@@ -43,13 +43,17 @@ struct ContentView: View {
             }
             .fullScreenCover(item: $viewModel.pendingCameraAction) { action in
                 CameraView(action: action) {
-                    viewModel.pendingCameraAction = nil
+                    Task { @MainActor in
+                        viewModel.pendingCameraAction = nil
+                    }
                 }
                 .ignoresSafeArea()
             }
             .sheet(item: $viewModel.pendingMessageAction) { action in
                 MessageComposeView(action: action) {
-                    viewModel.pendingMessageAction = nil
+                    Task { @MainActor in
+                        viewModel.pendingMessageAction = nil
+                    }
                 }
             }
             .translationTask(viewModel.pendingTranslationConfig) { session in
@@ -99,6 +103,7 @@ struct ContentView: View {
             .task {
                 viewModel.authManager = authManager
                 authManager.restoreSession()
+                await Task.yield()  // let SwiftUI finish layout before modifying state
                 viewModel.loadPersistedConversations()
                 viewModel.addGreetingIfNeeded()
                 viewModel.fetchSuggestions()

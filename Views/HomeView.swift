@@ -275,8 +275,8 @@ struct HomeView: View {
 
     @ViewBuilder
     private var normalContent: some View {
-        // Weather or greeting — fades away after first recording
-        if !viewModel.hasUsedRecording {
+        // Weather or greeting — fades away after first recording or when response is showing
+        if !viewModel.hasUsedRecording && viewModel.lastSpokenResponse == nil {
             if let temp = viewModel.weatherTemp {
                 // Weather display
                 VStack(spacing: 4) {
@@ -347,13 +347,15 @@ struct HomeView: View {
                         .font(.system(size: 13, weight: .light))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
+                        .padding(.bottom, 20)
                 }
-                .frame(maxHeight: 240)
+                .frame(maxHeight: 420)
+                .scrollIndicators(.hidden)
                 .transition(.opacity)
                 .onTapGesture {
                     viewModel.showChat = true
                 }
-            } else if !viewModel.homeWidgets.isEmpty {
+            } else if hasAnyWidgetData {
                 homeWidgetStack
                     .transition(.opacity)
                     .onTapGesture {
@@ -373,6 +375,20 @@ struct HomeView: View {
         .padding(.horizontal, 32)
         .frame(minHeight: 20)
         .animation(.easeInOut(duration: 0.4), value: viewModel.lastSpokenResponse == nil)
+    }
+
+    /// True when at least one home widget has actual data to display
+    private var hasAnyWidgetData: Bool {
+        for widget in viewModel.homeWidgets {
+            switch widget {
+            case .calendar: if !viewModel.upcomingEvents.isEmpty { return true }
+            case .briefing: if viewModel.briefingText != nil { return true }
+            case .email: if let e = viewModel.emailWidgetData, e.unreadCount > 0 { return true }
+            case .commute: if let c = viewModel.commuteWidgetData, c.duration != nil { return true }
+            case .weather: if viewModel.weatherTemp != nil { return true }
+            }
+        }
+        return false
     }
 
     // MARK: - Home Widget Stack
@@ -454,8 +470,6 @@ struct HomeView: View {
                         .fill(.white.opacity(0.04))
                         .stroke(.white.opacity(0.08), lineWidth: 0.5)
                 )
-            } else {
-                widgetPlaceholder(icon: "envelope", text: "No unread emails")
             }
         case .commute:
             if let commute = viewModel.commuteWidgetData, let duration = commute.duration {
@@ -483,8 +497,6 @@ struct HomeView: View {
                         .fill(.white.opacity(0.04))
                         .stroke(.white.opacity(0.08), lineWidth: 0.5)
                 )
-            } else {
-                widgetPlaceholder(icon: "car", text: "No commute data")
             }
         case .weather:
             if let temp = viewModel.weatherTemp, let condition = viewModel.weatherCondition {
@@ -513,29 +525,8 @@ struct HomeView: View {
                         .fill(.white.opacity(0.04))
                         .stroke(.white.opacity(0.08), lineWidth: 0.5)
                 )
-            } else {
-                widgetPlaceholder(icon: "cloud.sun", text: "Loading weather...")
             }
         }
-    }
-
-    private func widgetPlaceholder(icon: String, text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.3))
-            Text(text)
-                .font(.system(size: 11, weight: .light))
-                .foregroundStyle(.white.opacity(0.3))
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(.white.opacity(0.03))
-                .stroke(.white.opacity(0.05), lineWidth: 0.5)
-        )
     }
 
     // MARK: - Onboarding Actions

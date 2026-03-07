@@ -158,8 +158,14 @@ final class APIClient: Sendable {
 
     // MARK: - Private
 
+    private func buildURL(path: String) -> URL? {
+        // Use string concatenation to preserve query parameters —
+        // appendingPathComponent percent-encodes ? and = characters
+        URL(string: baseURL.absoluteString + path)
+    }
+
     private func get<T: Decodable>(path: String) async throws -> T {
-        let url = baseURL.appendingPathComponent(path)
+        guard let url = buildURL(path: path) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         addAuthHeader(to: &request)
@@ -167,7 +173,7 @@ final class APIClient: Sendable {
     }
 
     private func put<T: Decodable, B: Encodable>(path: String, body: B?) async throws -> T {
-        let url = baseURL.appendingPathComponent(path)
+        guard let url = buildURL(path: path) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -179,7 +185,7 @@ final class APIClient: Sendable {
     }
 
     private func post<T: Decodable, B: Encodable>(path: String, body: B?) async throws -> T {
-        let url = baseURL.appendingPathComponent(path)
+        guard let url = buildURL(path: path) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

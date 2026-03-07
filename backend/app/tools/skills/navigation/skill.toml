@@ -1,11 +1,12 @@
 [skill]
 name = "navigation"
 display_name = "Navigation"
-description = "commute time, departure time, directions, distance, open maps (google_routes.*, ios_navigation.*)"
+description = "directions, commute time, distance, open maps (google_routes.*, ios_navigation.*)"
 tool_modules = ["google_routes", "ios_navigation"]
 planner_instructions = [
+    "ALWAYS use ios_navigation.open_in_maps for directions/navigation requests. Do NOT list turn-by-turn steps as text.",
+    "Only use google_routes.compute_route when the user asks 'how far', 'how long', 'what's the commute time' — pure info requests without wanting to navigate.",
     "For 'when should I leave' queries, use google_routes.get_departure_time with the user's desired arrival time.",
     "Use the user's current location as origin unless they specify otherwise — omit the origin param to auto-use device location.",
     "Default travel mode is DRIVE unless user specifies transit, walking, or bicycling.",
-    "Use ios_navigation.open_in_maps when the user wants turn-by-turn directions — this opens Google Maps on the device.",
 ]

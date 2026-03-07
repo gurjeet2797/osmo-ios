@@ -440,6 +440,11 @@ final class AppViewModel {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
+        // Clear previous response from HomeView when user sends a new message
+        typewriterTask?.cancel()
+        lastSpokenResponse = nil
+        displayedResponse = ""
+
         let userMessage = Message(content: text, isUser: true)
         currentConversation?.messages.append(userMessage)
         inputText = ""
@@ -634,14 +639,7 @@ final class AppViewModel {
                 displayedResponse.append(char)
                 try? await Task.sleep(for: .milliseconds(15))
             }
-            // After typewriter finishes, auto-dismiss after 12 seconds
-            if !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(12))
-                if !Task.isCancelled {
-                    lastSpokenResponse = nil
-                    displayedResponse = ""
-                }
-            }
+            // Response stays on screen until user sends a new message
         }
 
         // Build tags from action plan steps

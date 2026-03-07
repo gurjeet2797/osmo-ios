@@ -204,12 +204,12 @@ final class AutoCaptureViewController: UIViewController {
 
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(1))
-            guard let self else { return }
-            self.countdownLabel?.text = "1"
+            guard let s1 = self else { return }
+            s1.countdownLabel?.text = "1"
             try? await Task.sleep(for: .seconds(1))
-            guard let self else { return }
-            self.countdownLabel?.text = ""
-            self.capture()
+            guard let s2 = self else { return }
+            s2.countdownLabel?.text = ""
+            s2.capture()
         }
     }
 

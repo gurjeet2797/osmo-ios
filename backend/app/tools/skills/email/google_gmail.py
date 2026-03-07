@@ -139,11 +139,63 @@ class GetAttachmentTool(_GmailTool):
         }
 
 
+class ReadAttachmentTool(_GmailTool):
+    name = "google_gmail.read_attachment"
+    description = (
+        "Extract text content from an email attachment (PDF, DOCX, TXT, CSV). "
+        "Downloads the attachment and parses its text so you can search for "
+        "addresses, amounts, dates, names, and other information inside documents. "
+        "Use after list_attachments when you need to find specific info in a document."
+    )
+
+    def parameters_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "message_id": {
+                    "type": "string",
+                    "description": "The Gmail message ID containing the attachment",
+                },
+                "attachment_id": {
+                    "type": "string",
+                    "description": "The attachment ID from list_attachments",
+                },
+            },
+            "required": ["message_id", "attachment_id"],
+        }
+
+    async def execute(self, args: dict[str, Any], context: ToolContext) -> dict[str, Any]:
+        from app.connectors.document_parser import extract_text
+
+        client = self._client(context)
+        raw_bytes, filename, mime_type = client.download_attachment(
+            args["message_id"], args["attachment_id"]
+        )
+
+        text = extract_text(raw_bytes, mime_type, filename)
+        if not text:
+            return {
+                "filename": filename,
+                "mime_type": mime_type,
+                "size": len(raw_bytes),
+                "error": f"Could not extract text from {mime_type} file",
+            }
+
+        return {
+            "filename": filename,
+            "mime_type": mime_type,
+            "size": len(raw_bytes),
+            "text": text,
+            "text_length": len(text),
+        }
+
+
 _TOOLS = [
     SearchEmailsTool(),
     ReadEmailTool(),
     ListAttachmentsTool(),
     GetAttachmentTool(),
+    ReadAttachmentTool(),
 ]
 
 for _t in _TOOLS:

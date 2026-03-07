@@ -1,0 +1,600 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0421606166BBA8DB83375A3B /* NavigationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6DE337134948CBAD4399713 /* NavigationManager.swift */; };
+		09D2E5F19C83C57671210C30 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = C4187E97DEF67F40698B1AA9 /* Shaders.metal */; };
+		16D7D0BEECAAA0DF7D06BFAB /* AttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F71B96280E969603F9096D /* AttachmentView.swift */; };
+		1799D10A914CDAF8EC70B989 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E67B7FB8FA93B122715D071 /* PaywallView.swift */; };
+		181ABB82905814C5CA174875 /* ParticleSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D430729F9491493A3185DA1B /* ParticleSystem.swift */; };
+		18F3A4AD734E75D14CDDAE10 /* AppLauncherManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4A840BFB8D4526E00F74D /* AppLauncherManager.swift */; };
+		22B078F80812BE660AB627C0 /* OnboardingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82313F07584AACB753FEA2B /* OnboardingManager.swift */; };
+		24172DEDCD8DAB683CC5CE63 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E622D4CF535BEE22830B7233 /* LocationManager.swift */; };
+		28B54B68BB8941B728B80ACA /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF82F915326847809B2DCFC7 /* AuthManager.swift */; };
+		29140ABBC7558EC3EC7D3B4A /* ShapeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5B3105E22626B9D517B8F4 /* ShapeLibrary.swift */; };
+		32F1BF4F7F09CBE8BD5816AF /* VisionCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC35CC4A9ED27DD2716E7D1 /* VisionCameraView.swift */; };
+		395033B3A8EC0DF8925C417C /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB1D1BF2402616AF80DAE71 /* NotificationManager.swift */; };
+		3A762E54535ABE0D2DDE8FB5 /* ParticleStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185879C667CB2ACBC18B736A /* ParticleStateMachine.swift */; };
+		3BDC2E7FCC65397937ABBF00 /* MediaManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2DB3F4EED83313D6CCBCAF /* MediaManager.swift */; };
+		3CCD5AD8192D7D2E76D553AD /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EBEA6769524DAB7FA9C74F /* SpeechRecognizer.swift */; };
+		3CF131230975D2032D942DBD /* DeviceControlManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BC59F405F3C7E5FC6A6BAA /* DeviceControlManager.swift */; };
+		46C2489EB5AF1866D240AECC /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548D7180A54EC797C1E32B50 /* APIModels.swift */; };
+		4B15B9D3AEFD22542B7AB95D /* WeatherKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F97A970443EEE309459EBBB /* WeatherKit.framework */; };
+		4BA1EDD3B63B931591BD1F47 /* ConversationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 377E848482F36FA7E3FBFAF2 /* ConversationStore.swift */; };
+		4E2EA65B86C7859E66ABAB51 /* ControlCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2194CC5D87D4F3B0EDC0EE5 /* ControlCenterView.swift */; };
+		4E5F12E1F6AB2177860E91E8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7B6C9A24A5C644F84DDE67 /* ContentView.swift */; };
+		572A9FBBB5924FB8A4360D96 /* OsmoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1E4FB0F3DEF75B761A7ADC /* OsmoApp.swift */; };
+		5A4AE6DC183FB012201D354D /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0879C72D4C81786E861D1A5D /* FAQView.swift */; };
+		6192947DA4A56118BDBB9C88 /* MotionControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A594D7C98E3BD3080590A3 /* MotionControllers.swift */; };
+		68E1DE993A94C8FB4ABDF15E /* ParticleShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94E3CADCDC24178A21FB5E8D /* ParticleShape.swift */; };
+		6B97B7DB3B2D7AC360E899BE /* HistorySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1813B66A171BD85831186BF5 /* HistorySheetView.swift */; };
+		6BFA0A078D166EB7E709ADFF /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE71F5965CDA5D7D9887450D /* APIClient.swift */; };
+		7C21AFB663099C8720879315 /* ParticleOrbView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E2CD47D73A658336C57F55A /* ParticleOrbView.swift */; };
+		7C95CE04C2D5842ACF450172 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0FE36C006853C354E3F38E /* Message.swift */; };
+		8195D56E95825AE3EE32E946 /* MusicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D79341BD9FF6039CA212196 /* MusicManager.swift */; };
+		8CF5FFF6E0B4E9C86564F202 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CF7C5229271F3F6737D0641 /* APIConfig.swift */; };
+		91738706E14BD2CF31EC9D82 /* TranslationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34EE81199671D3EEB9EB7C8 /* TranslationManager.swift */; };
+		946ED54ADCD811FC7ABEBB36 /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E459EBA485C6155E1A2506CB /* MarkdownParser.swift */; };
+		9840FE62FF2D6B17D78D642B /* PushNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99969103ABCA57709B056495 /* PushNotificationDelegate.swift */; };
+		9EB2E9A43F03C9E7C34287E6 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA3841D17582527191ECF7C /* AppViewModel.swift */; };
+		A45C00551C9A9DE0B5A6A194 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1E33E73A0FF06FF1978DFFB4 /* Assets.xcassets */; };
+		AA652730C84F3145F8D1536E /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C21038F37AFA152148432533 /* HomeView.swift */; };
+		AC964CE160F3B21198E888D0 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEA41E6CC605116790D0E16 /* KeychainHelper.swift */; };
+		B5B8A987238640DB7EEE2E35 /* MessageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 513C0F9901E824BEA659165D /* MessageManager.swift */; };
+		BB010A2EA48C9EF4D8614315 /* EventKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9EAC588CB7334F739E780C2 /* EventKitManager.swift */; };
+		BBD72A746FA9E6013AF309C9 /* GlassEffect+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00CE9E85C065C8F72E7319BB /* GlassEffect+Adaptive.swift */; };
+		C0AC30CBCE02BF6A7323E47F /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C3C26BA3B0AE9C46FB11A8 /* MarkdownContentView.swift */; };
+		C3D43E8489FBCC48738BF0FC /* CosmicBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83A25C8CC48BF274635A3744 /* CosmicBackground.swift */; };
+		CB308F6856E29A07E73B1BDA /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ECDD67C6F85BAD6956E0D93 /* SubscriptionManager.swift */; };
+		DF67549783C79B40CC622BBD /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF09418049329B7768F4CA4B /* CameraManager.swift */; };
+		E0E617A4676B7C5E38F110F7 /* ConfirmationBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77C6B514D939E8A01207448 /* ConfirmationBannerView.swift */; };
+		E9AA66C25539A97C24751C94 /* ChatSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737A7E6B68B2F7EF34DA16AF /* ChatSheetView.swift */; };
+		F23071B68D4DBFFE1BE30DEE /* MorphController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F6986984CD8A0182BC1BB5 /* MorphController.swift */; };
+		FE8785DF6ECCDBBA2483D5AA /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4710298DFDFA863974E1C12A /* ReminderManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		00CE9E85C065C8F72E7319BB /* GlassEffect+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GlassEffect+Adaptive.swift"; sourceTree = "<group>"; };
+		05A594D7C98E3BD3080590A3 /* MotionControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionControllers.swift; sourceTree = "<group>"; };
+		05C4A840BFB8D4526E00F74D /* AppLauncherManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLauncherManager.swift; sourceTree = "<group>"; };
+		0879C72D4C81786E861D1A5D /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
+		1813B66A171BD85831186BF5 /* HistorySheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySheetView.swift; sourceTree = "<group>"; };
+		185879C667CB2ACBC18B736A /* ParticleStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleStateMachine.swift; sourceTree = "<group>"; };
+		1E2CD47D73A658336C57F55A /* ParticleOrbView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleOrbView.swift; sourceTree = "<group>"; };
+		1E33E73A0FF06FF1978DFFB4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		377E848482F36FA7E3FBFAF2 /* ConversationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationStore.swift; sourceTree = "<group>"; };
+		3E67B7FB8FA93B122715D071 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		4710298DFDFA863974E1C12A /* ReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderManager.swift; sourceTree = "<group>"; };
+		4CEA41E6CC605116790D0E16 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		4FA3841D17582527191ECF7C /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		513C0F9901E824BEA659165D /* MessageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageManager.swift; sourceTree = "<group>"; };
+		548D7180A54EC797C1E32B50 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
+		63137BD4F649039074790503 /* Osmo AI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "Osmo AI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		69F6986984CD8A0182BC1BB5 /* MorphController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorphController.swift; sourceTree = "<group>"; };
+		6E0FE36C006853C354E3F38E /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		71F71B96280E969603F9096D /* AttachmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentView.swift; sourceTree = "<group>"; };
+		737A7E6B68B2F7EF34DA16AF /* ChatSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSheetView.swift; sourceTree = "<group>"; };
+		7CF7C5229271F3F6737D0641 /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
+		7D79341BD9FF6039CA212196 /* MusicManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicManager.swift; sourceTree = "<group>"; };
+		7ECDD67C6F85BAD6956E0D93 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
+		7F97A970443EEE309459EBBB /* WeatherKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WeatherKit.framework; path = System/Library/Frameworks/WeatherKit.framework; sourceTree = SDKROOT; };
+		83A25C8CC48BF274635A3744 /* CosmicBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CosmicBackground.swift; sourceTree = "<group>"; };
+		8CC35CC4A9ED27DD2716E7D1 /* VisionCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionCameraView.swift; sourceTree = "<group>"; };
+		8F7B6C9A24A5C644F84DDE67 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		94E3CADCDC24178A21FB5E8D /* ParticleShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleShape.swift; sourceTree = "<group>"; };
+		99969103ABCA57709B056495 /* PushNotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationDelegate.swift; sourceTree = "<group>"; };
+		99BC59F405F3C7E5FC6A6BAA /* DeviceControlManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlManager.swift; sourceTree = "<group>"; };
+		9B2DB3F4EED83313D6CCBCAF /* MediaManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaManager.swift; sourceTree = "<group>"; };
+		A77C6B514D939E8A01207448 /* ConfirmationBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationBannerView.swift; sourceTree = "<group>"; };
+		AE1E4FB0F3DEF75B761A7ADC /* OsmoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OsmoApp.swift; sourceTree = "<group>"; };
+		B3C3C26BA3B0AE9C46FB11A8 /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
+		C21038F37AFA152148432533 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		C2194CC5D87D4F3B0EDC0EE5 /* ControlCenterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlCenterView.swift; sourceTree = "<group>"; };
+		C34EE81199671D3EEB9EB7C8 /* TranslationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationManager.swift; sourceTree = "<group>"; };
+		C4187E97DEF67F40698B1AA9 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		CF82F915326847809B2DCFC7 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		D430729F9491493A3185DA1B /* ParticleSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleSystem.swift; sourceTree = "<group>"; };
+		D82313F07584AACB753FEA2B /* OnboardingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingManager.swift; sourceTree = "<group>"; };
+		DE71F5965CDA5D7D9887450D /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		E459EBA485C6155E1A2506CB /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
+		E622D4CF535BEE22830B7233 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		E9EAC588CB7334F739E780C2 /* EventKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitManager.swift; sourceTree = "<group>"; };
+		EA5B3105E22626B9D517B8F4 /* ShapeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeLibrary.swift; sourceTree = "<group>"; };
+		EEB1D1BF2402616AF80DAE71 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		EF09418049329B7768F4CA4B /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		F4EBEA6769524DAB7FA9C74F /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
+		F6DE337134948CBAD4399713 /* NavigationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationManager.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B511F47C25B1959357788D05 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4B15B9D3AEFD22542B7AB95D /* WeatherKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1C3ADFC75601445C7DA47BA6 = {
+			isa = PBXGroup;
+			children = (
+				1E33E73A0FF06FF1978DFFB4 /* Assets.xcassets */,
+				8F7B6C9A24A5C644F84DDE67 /* ContentView.swift */,
+				AE1E4FB0F3DEF75B761A7ADC /* OsmoApp.swift */,
+				C4187E97DEF67F40698B1AA9 /* Shaders.metal */,
+				4266A53A4C40DCB4D5751A97 /* Models */,
+				C4A2438A3FEFFC57EC20089A /* ParticleOrb */,
+				D3525DF2C0FC283211049785 /* Services */,
+				512B86C828835A9569B53DE0 /* Utilities */,
+				F9BFFBE338D3FFAD70E9390F /* ViewModels */,
+				9DF2E0CA28EF950AE1B9EEA9 /* Views */,
+				BF4CCE91E442508E8C0F8325 /* Frameworks */,
+				7E8E0E77A0DE05FA849CCF25 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4266A53A4C40DCB4D5751A97 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				548D7180A54EC797C1E32B50 /* APIModels.swift */,
+				6E0FE36C006853C354E3F38E /* Message.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		512B86C828835A9569B53DE0 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				00CE9E85C065C8F72E7319BB /* GlassEffect+Adaptive.swift */,
+				E459EBA485C6155E1A2506CB /* MarkdownParser.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		7E8E0E77A0DE05FA849CCF25 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				63137BD4F649039074790503 /* Osmo AI.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9DF2E0CA28EF950AE1B9EEA9 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				71F71B96280E969603F9096D /* AttachmentView.swift */,
+				737A7E6B68B2F7EF34DA16AF /* ChatSheetView.swift */,
+				A77C6B514D939E8A01207448 /* ConfirmationBannerView.swift */,
+				C2194CC5D87D4F3B0EDC0EE5 /* ControlCenterView.swift */,
+				83A25C8CC48BF274635A3744 /* CosmicBackground.swift */,
+				0879C72D4C81786E861D1A5D /* FAQView.swift */,
+				1813B66A171BD85831186BF5 /* HistorySheetView.swift */,
+				C21038F37AFA152148432533 /* HomeView.swift */,
+				B3C3C26BA3B0AE9C46FB11A8 /* MarkdownContentView.swift */,
+				3E67B7FB8FA93B122715D071 /* PaywallView.swift */,
+				8CC35CC4A9ED27DD2716E7D1 /* VisionCameraView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		BF4CCE91E442508E8C0F8325 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7F97A970443EEE309459EBBB /* WeatherKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C4A2438A3FEFFC57EC20089A /* ParticleOrb */ = {
+			isa = PBXGroup;
+			children = (
+				69F6986984CD8A0182BC1BB5 /* MorphController.swift */,
+				05A594D7C98E3BD3080590A3 /* MotionControllers.swift */,
+				1E2CD47D73A658336C57F55A /* ParticleOrbView.swift */,
+				94E3CADCDC24178A21FB5E8D /* ParticleShape.swift */,
+				185879C667CB2ACBC18B736A /* ParticleStateMachine.swift */,
+				D430729F9491493A3185DA1B /* ParticleSystem.swift */,
+				EA5B3105E22626B9D517B8F4 /* ShapeLibrary.swift */,
+			);
+			path = ParticleOrb;
+			sourceTree = "<group>";
+		};
+		D3525DF2C0FC283211049785 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DE71F5965CDA5D7D9887450D /* APIClient.swift */,
+				7CF7C5229271F3F6737D0641 /* APIConfig.swift */,
+				05C4A840BFB8D4526E00F74D /* AppLauncherManager.swift */,
+				CF82F915326847809B2DCFC7 /* AuthManager.swift */,
+				EF09418049329B7768F4CA4B /* CameraManager.swift */,
+				377E848482F36FA7E3FBFAF2 /* ConversationStore.swift */,
+				99BC59F405F3C7E5FC6A6BAA /* DeviceControlManager.swift */,
+				E9EAC588CB7334F739E780C2 /* EventKitManager.swift */,
+				4CEA41E6CC605116790D0E16 /* KeychainHelper.swift */,
+				E622D4CF535BEE22830B7233 /* LocationManager.swift */,
+				9B2DB3F4EED83313D6CCBCAF /* MediaManager.swift */,
+				513C0F9901E824BEA659165D /* MessageManager.swift */,
+				7D79341BD9FF6039CA212196 /* MusicManager.swift */,
+				F6DE337134948CBAD4399713 /* NavigationManager.swift */,
+				EEB1D1BF2402616AF80DAE71 /* NotificationManager.swift */,
+				D82313F07584AACB753FEA2B /* OnboardingManager.swift */,
+				99969103ABCA57709B056495 /* PushNotificationDelegate.swift */,
+				4710298DFDFA863974E1C12A /* ReminderManager.swift */,
+				F4EBEA6769524DAB7FA9C74F /* SpeechRecognizer.swift */,
+				7ECDD67C6F85BAD6956E0D93 /* SubscriptionManager.swift */,
+				C34EE81199671D3EEB9EB7C8 /* TranslationManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		F9BFFBE338D3FFAD70E9390F /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				4FA3841D17582527191ECF7C /* AppViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3987454F7D258962B69ACF58 /* Osmo AI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CCB68207406F9AD1300D3D01 /* Build configuration list for PBXNativeTarget "Osmo AI" */;
+			buildPhases = (
+				FB26F1FBB95B2E7ED41B2985 /* Sources */,
+				7C0E34A9275ABBA30B6CF8FF /* Resources */,
+				B511F47C25B1959357788D05 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Osmo AI";
+			packageProductDependencies = (
+			);
+			productName = "Osmo AI";
+			productReference = 63137BD4F649039074790503 /* Osmo AI.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D9C90F794915AD779929178C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					3987454F7D258962B69ACF58 = {
+						DevelopmentTeam = C5G4T4U48J;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 47B90E44679414AEF97D8045 /* Build configuration list for PBXProject "Osmo AI" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1C3ADFC75601445C7DA47BA6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3987454F7D258962B69ACF58 /* Osmo AI */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7C0E34A9275ABBA30B6CF8FF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A45C00551C9A9DE0B5A6A194 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FB26F1FBB95B2E7ED41B2985 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6BFA0A078D166EB7E709ADFF /* APIClient.swift in Sources */,
+				8CF5FFF6E0B4E9C86564F202 /* APIConfig.swift in Sources */,
+				46C2489EB5AF1866D240AECC /* APIModels.swift in Sources */,
+				18F3A4AD734E75D14CDDAE10 /* AppLauncherManager.swift in Sources */,
+				9EB2E9A43F03C9E7C34287E6 /* AppViewModel.swift in Sources */,
+				16D7D0BEECAAA0DF7D06BFAB /* AttachmentView.swift in Sources */,
+				28B54B68BB8941B728B80ACA /* AuthManager.swift in Sources */,
+				DF67549783C79B40CC622BBD /* CameraManager.swift in Sources */,
+				E9AA66C25539A97C24751C94 /* ChatSheetView.swift in Sources */,
+				E0E617A4676B7C5E38F110F7 /* ConfirmationBannerView.swift in Sources */,
+				4E5F12E1F6AB2177860E91E8 /* ContentView.swift in Sources */,
+				4E2EA65B86C7859E66ABAB51 /* ControlCenterView.swift in Sources */,
+				4BA1EDD3B63B931591BD1F47 /* ConversationStore.swift in Sources */,
+				C3D43E8489FBCC48738BF0FC /* CosmicBackground.swift in Sources */,
+				3CF131230975D2032D942DBD /* DeviceControlManager.swift in Sources */,
+				BB010A2EA48C9EF4D8614315 /* EventKitManager.swift in Sources */,
+				5A4AE6DC183FB012201D354D /* FAQView.swift in Sources */,
+				BBD72A746FA9E6013AF309C9 /* GlassEffect+Adaptive.swift in Sources */,
+				6B97B7DB3B2D7AC360E899BE /* HistorySheetView.swift in Sources */,
+				AA652730C84F3145F8D1536E /* HomeView.swift in Sources */,
+				AC964CE160F3B21198E888D0 /* KeychainHelper.swift in Sources */,
+				24172DEDCD8DAB683CC5CE63 /* LocationManager.swift in Sources */,
+				C0AC30CBCE02BF6A7323E47F /* MarkdownContentView.swift in Sources */,
+				946ED54ADCD811FC7ABEBB36 /* MarkdownParser.swift in Sources */,
+				3BDC2E7FCC65397937ABBF00 /* MediaManager.swift in Sources */,
+				7C95CE04C2D5842ACF450172 /* Message.swift in Sources */,
+				B5B8A987238640DB7EEE2E35 /* MessageManager.swift in Sources */,
+				F23071B68D4DBFFE1BE30DEE /* MorphController.swift in Sources */,
+				6192947DA4A56118BDBB9C88 /* MotionControllers.swift in Sources */,
+				8195D56E95825AE3EE32E946 /* MusicManager.swift in Sources */,
+				0421606166BBA8DB83375A3B /* NavigationManager.swift in Sources */,
+				395033B3A8EC0DF8925C417C /* NotificationManager.swift in Sources */,
+				22B078F80812BE660AB627C0 /* OnboardingManager.swift in Sources */,
+				572A9FBBB5924FB8A4360D96 /* OsmoApp.swift in Sources */,
+				7C21AFB663099C8720879315 /* ParticleOrbView.swift in Sources */,
+				68E1DE993A94C8FB4ABDF15E /* ParticleShape.swift in Sources */,
+				3A762E54535ABE0D2DDE8FB5 /* ParticleStateMachine.swift in Sources */,
+				181ABB82905814C5CA174875 /* ParticleSystem.swift in Sources */,
+				1799D10A914CDAF8EC70B989 /* PaywallView.swift in Sources */,
+				9840FE62FF2D6B17D78D642B /* PushNotificationDelegate.swift in Sources */,
+				FE8785DF6ECCDBBA2483D5AA /* ReminderManager.swift in Sources */,
+				09D2E5F19C83C57671210C30 /* Shaders.metal in Sources */,
+				29140ABBC7558EC3EC7D3B4A /* ShapeLibrary.swift in Sources */,
+				3CCD5AD8192D7D2E76D553AD /* SpeechRecognizer.swift in Sources */,
+				CB308F6856E29A07E73B1BDA /* SubscriptionManager.swift in Sources */,
+				91738706E14BD2CF31EC9D82 /* TranslationManager.swift in Sources */,
+				32F1BF4F7F09CBE8BD5816AF /* VisionCameraView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		92BCC08151C0A8B61536DB03 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Osmo.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Osmo AI";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Osmo controls music playback through Apple Music.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Osmo needs full calendar access to create, update, and delete events on your behalf.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Osmo needs calendar access to manage your events locally.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Osmo uses the camera to take photos and record video on your behalf.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Osmo uses your location for navigation, local search, and commute estimates.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is needed to record your voice for speech-to-text.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Osmo saves captured photos and videos to your photo library.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Osmo needs reminders access to create, complete, and manage your reminders.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition is used to transcribe your voice commands.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gurjeet.osmoai;
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9BF7F6AAF79271132B2B7C69 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = C5G4T4U48J;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		ADD5515707B4B8DE2B2EC5AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = C5G4T4U48J;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C5E87071677A7943C488EE89 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Osmo.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Osmo AI";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads = NO;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Osmo controls music playback through Apple Music.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Osmo needs full calendar access to create, update, and delete events on your behalf.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Osmo needs calendar access to manage your events locally.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Osmo uses the camera to take photos and record video on your behalf.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Osmo uses your location for navigation, local search, and commute estimates.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Microphone access is needed to record your voice for speech-to-text.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Osmo saves captured photos and videos to your photo library.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Osmo needs reminders access to create, complete, and manage your reminders.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition is used to transcribe your voice commands.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gurjeet.osmoai;
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		47B90E44679414AEF97D8045 /* Build configuration list for PBXProject "Osmo AI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9BF7F6AAF79271132B2B7C69 /* Debug */,
+				ADD5515707B4B8DE2B2EC5AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CCB68207406F9AD1300D3D01 /* Build configuration list for PBXNativeTarget "Osmo AI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C5E87071677A7943C488EE89 /* Debug */,
+				92BCC08151C0A8B61536DB03 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D9C90F794915AD779929178C /* Project object */;
+}

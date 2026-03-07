@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import attachments, auth, calendar, command, health, notifications, openclaw, preferences, subscription, suggestions, widgets
+from app.api import attachments, auth, calendar, command, health, notifications, preferences, subscription, suggestions, widgets
 from app.config import settings
 from app.db.session import engine, redis_pool
 
@@ -30,6 +30,11 @@ async def lifespan(app: FastAPI):
     db_host = urlparse(settings.database_url).hostname or "unknown"
     log.info("Starting Osmo backend", db_host=db_host, environment=settings.environment)
 
+    # Validate production configuration
+    config_warnings = settings.validate_production()
+    for w in config_warnings:
+        log.warning("config.warning", message=w)
+
     # Start background job scheduler
     from app.core.scheduler import start_scheduler, stop_scheduler
     try:
@@ -44,13 +49,6 @@ async def lifespan(app: FastAPI):
     except Exception:
         log.warning("scheduler.stop_failed", exc_info=True)
 
-    # Close OpenClaw connection pool
-    from app.core.openclaw_client import openclaw_client
-    try:
-        await openclaw_client.close()
-    except Exception:
-        log.warning("openclaw.close_failed", exc_info=True)
-
     await engine.dispose()
     await redis_pool.aclose()
 
@@ -61,7 +59,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()] if settings.allowed_origins else ["*"]
+origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()] if settings.allowed_origins else []
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -77,7 +75,6 @@ app.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
 app.include_router(attachments.router, prefix="/attachments", tags=["attachments"])
 app.include_router(suggestions.router, prefix="/suggestions", tags=["suggestions"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
-app.include_router(openclaw.router, prefix="/openclaw", tags=["openclaw"])
 app.include_router(preferences.router, prefix="/preferences", tags=["preferences"])
 app.include_router(subscription.router, prefix="/subscription", tags=["subscription"])
 app.include_router(widgets.router, prefix="/widgets", tags=["widgets"])

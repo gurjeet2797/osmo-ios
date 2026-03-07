@@ -4,7 +4,8 @@ display_name = "Email"
 description = "search, read, list/get attachments (google_gmail.*)"
 tool_modules = ["google_gmail"]
 planner_instructions = [
-    "Email: search_emails -> read_email. Attachments: search -> list -> get.",
-    "When extracting specific information (addresses, dates, amounts, phone numbers), read multiple emails if the first doesn't contain the full answer. Try alternative search queries if initial results are insufficient.",
-    "If an email body shows [truncated], the information you need may be further in the email — try searching for more specific terms or reading related emails in the thread.",
+    "Email chain: ALWAYS search_emails → read_email on top results → extract answer. Never stop after search alone.",
+    "When the user asks for specific info (address, phone, date, amount), call read_email on 2-3 top results in parallel to find it.",
+    "Attachments chain: search_emails → list_attachments → get_attachment.",
+    "If an email body shows [truncated], search with more specific terms or read thread-adjacent emails.",
 ]

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o"
 
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-4-5-20250929"
+    anthropic_model: str = "claude-sonnet-4-5-20250514"
     anthropic_max_tokens: int = 4096
 
     session_max_messages: int = 50
@@ -59,16 +59,22 @@ class Settings(BaseSettings):
     apns_key_contents: str = ""  # paste .p8 file contents here (Railway/cloud)
     apns_key_id: str = ""
     apns_team_id: str = ""
-    apns_bundle_id: str = "com.gurjeet.osmo"
+    apns_bundle_id: str = "com.gurjeet.osmoai"
 
-    # ---------------------------------------------------------------------------
-    # OpenClaw integration (opt-in — set OPENCLAW_ENABLED=true to activate)
-    # ---------------------------------------------------------------------------
-    openclaw_enabled: bool = False
-    openclaw_url: str = "http://localhost:18790"
-    openclaw_token: str = ""
-    openclaw_timeout: float = 30.0
-    openclaw_router_model: str = ""  # cheap classifier model, auto-detect from provider
+    def validate_production(self) -> list[str]:
+        """Return list of warnings for missing production settings."""
+        warnings = []
+        if self.jwt_secret_key == "change-me-in-production":
+            warnings.append("JWT_SECRET_KEY is using the default value — set a secure random key")
+        if not self.fernet_key:
+            warnings.append("FERNET_KEY is not set — Google OAuth token encryption will fail")
+        if self.llm_provider == "anthropic" and not self.anthropic_api_key:
+            warnings.append("ANTHROPIC_API_KEY is not set but llm_provider=anthropic")
+        if self.llm_provider == "openai" and not self.openai_api_key:
+            warnings.append("OPENAI_API_KEY is not set but llm_provider=openai")
+        if not self.google_client_id or not self.google_client_secret:
+            warnings.append("GOOGLE_CLIENT_ID/SECRET not set — OAuth will fail")
+        return warnings
 
 
 settings = Settings()

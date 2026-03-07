@@ -54,7 +54,8 @@ class ReadEmailTool(_GmailTool):
     name = "google_gmail.read_email"
     description = (
         "Read the full body of an email by its message_id. "
-        "Body is truncated to 8K characters to fit in context."
+        "Returns subject, sender, date, and body text (up to 16K chars). "
+        "Use this after search_emails to get the full content."
     )
 
     def parameters_schema(self) -> dict[str, Any]:

@@ -60,7 +60,7 @@ async def send_push_notification(
         url = f"{apns_host}/3/device/{device_token}"
         headers = {
             "authorization": f"bearer {apns_token}",
-            "apns-topic": getattr(settings, "apns_bundle_id", "com.gurjeet.osmo"),
+            "apns-topic": getattr(settings, "apns_bundle_id", "com.gurjeet.osmoai"),
             "apns-push-type": "alert",
             "apns-priority": "10",
         }

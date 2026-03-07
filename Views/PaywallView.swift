@@ -19,7 +19,7 @@ struct PaywallView: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 featureRow(icon: "infinity", text: "Unlimited requests")
-                featureRow(icon: "magnifyingglass", text: "OpenClaw deep research")
+                featureRow(icon: "magnifyingglass", text: "Deep research")
                 featureRow(icon: "eye", text: "Vision mode — photo analysis")
                 featureRow(icon: "envelope", text: "Email summaries")
             }

@@ -76,7 +76,7 @@ class PreferenceManager:
         )
         pref = result.scalar_one_or_none()
         if pref:
-            await self._db.delete(pref)
+            self._db.delete(pref)
             await self._db.commit()
             return True
         return False

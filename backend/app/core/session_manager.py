@@ -61,7 +61,7 @@ class SessionManager:
         )
         session = result.scalar_one_or_none()
         if session is not None:
-            await self._db.delete(session)
+            self._db.delete(session)
             await self._db.commit()
         log.info("session.cleared", user_id=self._user_id)
 

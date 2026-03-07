@@ -1,10 +1,12 @@
 [skill]
 name = "memory"
-display_name = "Memory"
-description = "store and recall user preferences (memory.set_preference, memory.get_preferences)"
-tool_modules = ["user_memory"]
+display_name = "Memory & Knowledge"
+description = "store/recall user preferences (memory.*) and accumulated knowledge about contacts, habits, and personal details (knowledge.*)"
+tool_modules = ["user_memory", "user_knowledge"]
 planner_instructions = [
-    "When the user states a preference ('always use...', 'I prefer...', 'default to...'), call memory.set_preference immediately.",
-    "Never store sensitive data (passwords, tokens, financial info) as preferences.",
-    "Use memory.get_preferences to recall what you know about the user when relevant.",
+    "When the user states a preference ('always use...', 'I prefer...', 'default to...'), call memory.set_preference.",
+    "When you learn a fact worth remembering (contact address, phone number, workplace), call knowledge.store_fact.",
+    "Before asking the user for info you might already know (someone's email, a location), call knowledge.search_facts first.",
+    "User preferences and known facts are pre-loaded into your context. Use knowledge.search_facts for deeper lookups.",
+    "Never store sensitive data (passwords, tokens, financial info).",
 ]

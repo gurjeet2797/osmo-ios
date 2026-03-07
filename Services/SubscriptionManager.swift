@@ -4,7 +4,7 @@ import StoreKit
 final class SubscriptionManager {
     static let shared = SubscriptionManager()
 
-    private static let productID = "com.develloinc.osmo.pro.monthly"
+    private static let productID = "com.gurjeet.osmoai.pro.monthly"
 
     var isPro: Bool = false
     var isLoading: Bool = false

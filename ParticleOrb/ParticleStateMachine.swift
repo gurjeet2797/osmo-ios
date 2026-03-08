@@ -40,27 +40,27 @@ nonisolated struct TransitionEnvelope: Sendable {
     // MARK: - Presets
 
     static let `default` = TransitionEnvelope(
-        anticipationDuration: 0.08,
-        actionDuration: 0.35,
-        settleDuration: 0.15,
-        anticipationScale: 0.92,
-        settleOvershoot: 1.06
+        anticipationDuration: 0.1,
+        actionDuration: 0.45,
+        settleDuration: 0.25,
+        anticipationScale: 0.94,
+        settleOvershoot: 1.04
     )
 
     static let quick = TransitionEnvelope(
-        anticipationDuration: 0.04,
-        actionDuration: 0.2,
-        settleDuration: 0.1,
-        anticipationScale: 0.95,
-        settleOvershoot: 1.03
+        anticipationDuration: 0.06,
+        actionDuration: 0.25,
+        settleDuration: 0.15,
+        anticipationScale: 0.96,
+        settleOvershoot: 1.02
     )
 
     static let emphatic = TransitionEnvelope(
-        anticipationDuration: 0.12,
-        actionDuration: 0.4,
-        settleDuration: 0.25,
-        anticipationScale: 0.85,
-        settleOvershoot: 1.12
+        anticipationDuration: 0.14,
+        actionDuration: 0.5,
+        settleDuration: 0.35,
+        anticipationScale: 0.88,
+        settleOvershoot: 1.08
     )
 }
 
@@ -118,13 +118,14 @@ nonisolated final class ParticleStateMachine: @unchecked Sendable {
             return .action
 
         } else if elapsed < env.totalDuration {
-            // Settle: overshoot then converge to 1.0
+            // Settle: smooth critically-damped overshoot converging to 1.0
             let settleElapsed = elapsed - env.anticipationDuration - env.actionDuration
             let t = Float(settleElapsed / max(env.settleDuration, 0.001))
-            // Damped sine for settle
             let overshoot = env.settleOvershoot - 1.0
-            let decay = (1.0 - t)
-            _lastEnvelopeScale = 1.0 + overshoot * decay * sin(t * Float.pi)
+            // Critically-damped spring: smooth rise then decay, no harsh oscillation
+            let smoothT = t * t * (3.0 - 2.0 * t) // smoothstep
+            let decay = 1.0 - smoothT
+            _lastEnvelopeScale = 1.0 + overshoot * decay * sin(smoothT * Float.pi)
             return .settle
 
         } else {

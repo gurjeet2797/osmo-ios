@@ -5,7 +5,7 @@ import time
 from typing import Annotated, Any
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datetime import UTC, datetime, timedelta
@@ -398,6 +398,51 @@ async def _record_command(
         await db.commit()
     except Exception:
         log.warning("command_history.record_failed", exc_info=True)
+
+
+@router.post("/audio", response_model=CommandResponse)
+async def handle_audio_command(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audio: UploadFile = File(..., description="Audio file (m4a, wav, mp3, webm)"),
+    timezone: str = Form(default="UTC"),
+    locale: str = Form(default="en-US"),
+    linked_providers: str = Form(default="google_calendar,google_gmail"),
+    latitude: float | None = Form(default=None),
+    longitude: float | None = Form(default=None),
+):
+    """Accept audio, transcribe with Whisper, then process as a command."""
+    from app.connectors.whisper import transcribe_audio
+
+    audio_bytes = await audio.read()
+    if len(audio_bytes) > 25_000_000:  # Whisper limit: 25MB
+        raise HTTPException(status_code=413, detail="Audio file too large (max 25MB)")
+    if len(audio_bytes) < 100:
+        raise HTTPException(status_code=400, detail="Audio file too small or empty")
+
+    filename = audio.filename or "audio.m4a"
+    result = await transcribe_audio(audio_bytes, filename=filename)
+    transcript = result["text"].strip()
+
+    if not transcript:
+        return CommandResponse(
+            spoken_response="I couldn't hear anything. Could you try again?",
+            detected_language=result.get("language"),
+        )
+
+    body = CommandRequest(
+        transcript=transcript,
+        timezone=timezone,
+        locale=locale,
+        linked_providers=[p.strip() for p in linked_providers.split(",") if p.strip()],
+        latitude=latitude,
+        longitude=longitude,
+    )
+
+    response = await handle_command(body, user, db)
+    # Attach detected language to the response
+    response.detected_language = result.get("language")
+    return response
 
 
 @router.post("", response_model=CommandResponse)

@@ -55,7 +55,13 @@ final class APIClient: Sendable {
 
     // MARK: - Commands
 
-    func sendCommand(transcript: String, timezone: String? = nil, locale: String? = nil, latitude: Double? = nil, longitude: Double? = nil, imageData: String? = nil) async throws -> CommandResponse {
+    func sendCommand(transcript: String, timezone: String? = nil, locale: String? = nil, latitude: Double? = nil, longitude: Double? = nil, imageData: String? = nil, platform: String? = nil) async throws -> CommandResponse {
+        let currentPlatform: String
+        #if os(macOS)
+        currentPlatform = platform ?? "macos"
+        #else
+        currentPlatform = platform ?? "ios"
+        #endif
         let request = CommandRequest(
             transcript: transcript,
             timezone: timezone ?? TimeZone.current.identifier,
@@ -63,9 +69,42 @@ final class APIClient: Sendable {
             linkedProviders: ["google_calendar", "google_gmail"],
             latitude: latitude,
             longitude: longitude,
-            imageData: imageData
+            imageData: imageData,
+            platform: currentPlatform
         )
         return try await post(path: "/command", body: request)
+    }
+
+    func sendAudioCommand(audioData: Data, latitude: Double? = nil, longitude: Double? = nil) async throws -> CommandResponse {
+        guard let url = buildURL(path: "/command/audio") else { throw APIError.invalidURL }
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        addAuthHeader(to: &request)
+
+        var body = Data()
+        func appendField(_ name: String, _ value: String) {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        appendField("timezone", TimeZone.current.identifier)
+        appendField("locale", Locale.current.identifier)
+        appendField("linked_providers", "google_calendar,google_gmail")
+        if let lat = latitude { appendField("latitude", "\(lat)") }
+        if let lng = longitude { appendField("longitude", "\(lng)") }
+
+        // Audio file part
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"recording.wav\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
+        body.append(audioData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+        return try await perform(request)
     }
 
     func confirmPlan(planId: String) async throws -> CommandResponse {

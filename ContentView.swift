@@ -35,6 +35,8 @@ struct ContentView: View {
                 if viewModel.showVisionCamera {
                     VisionCameraView { image in
                         viewModel.onPhotoCaptured(image)
+                    } onDismiss: {
+                        viewModel.cancelVisionCamera()
                     }
                     .ignoresSafeArea()
                     .transition(.opacity)

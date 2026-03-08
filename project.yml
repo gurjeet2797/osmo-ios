@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.gurjeet
   deploymentTarget:
     iOS: "18.0"
+    macOS: "15.0"
   xcodeVersion: "26.2"
   defaultConfig: Debug
 
@@ -116,13 +117,24 @@ targets:
         group: Services
       - path: Services/PushNotificationDelegate.swift
         group: Services
+      - path: Services/HapticEngine.swift
+        group: Services
+      # Shared with extension
+      - path: ShareExtension/SharedKeychain.swift
+        group: ShareExtension
+      - path: ShareExtension/SharedConfig.swift
+        group: ShareExtension
     dependencies:
+      - target: OsmoShareExtension
+        embed: true
       - sdk: WeatherKit.framework
     entitlements:
       path: Osmo.entitlements
       properties:
         aps-environment: production
         com.apple.developer.weatherkit: true
+        com.apple.security.application-groups:
+          - group.com.gurjeet.osmoai
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gurjeet.osmoai
@@ -160,5 +172,113 @@ targets:
               - osmo
         LSApplicationQueriesSchemes:
           - comgooglemaps
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+
+  OsmoShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShareExtension/ShareViewController.swift
+        group: ShareExtension
+      - path: ShareExtension/SharedKeychain.swift
+        group: ShareExtension
+      - path: ShareExtension/SharedConfig.swift
+        group: ShareExtension
+    entitlements:
+      path: ShareExtension/OsmoShareExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.gurjeet.osmoai
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gurjeet.osmoai.share-extension
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_EMIT_LOC_STRINGS: YES
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: "1.0.0"
+        INFOPLIST_KEY_CFBundleDisplayName: "Save to Osmo"
+        TARGETED_DEVICE_FAMILY: "1,2"
+    info:
+      path: ShareExtension/Info-ShareExtension.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: "$(PRODUCT_MODULE_NAME).ShareViewController"
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsText: true
+
+  Osmo AI macOS:
+    type: application
+    platform: macOS
+    sources:
+      # Shared
+      - path: Models/APIModels.swift
+        group: Models
+      - path: Models/Message.swift
+        group: Models
+      - path: Services/APIClient.swift
+        group: Services
+      - path: Services/APIConfig.swift
+        group: Services
+      - path: Services/AuthManager.swift
+        group: Services
+      - path: Services/KeychainHelper.swift
+        group: Services
+      - path: Services/ConversationStore.swift
+        group: Services
+      - path: Utilities/MarkdownParser.swift
+        group: Utilities
+      - path: Views/MarkdownContentView.swift
+        group: Views
+      - path: Assets.xcassets
+      # macOS-specific
+      - path: MacOS/MacOSApp.swift
+        group: MacOS
+      - path: MacOS/MenuBarView.swift
+        group: MacOS
+      - path: MacOS/MacChatView.swift
+        group: MacOS
+      - path: MacOS/MacSetupView.swift
+        group: MacOS
+      - path: MacOS/MacSpeechRecognizer.swift
+        group: MacOS
+      - path: MacOS/MacAppViewModel.swift
+        group: MacOS
+      - path: MacOS/iMessageReader.swift
+        group: MacOS
+      - path: MacOS/MacCosmicBackground.swift
+        group: MacOS
+    entitlements:
+      path: MacOS/Osmo-macOS.entitlements
+      properties:
+        com.apple.security.device.audio-input: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gurjeet.osmoai-macos
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_EMIT_LOC_STRINGS: YES
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: "1.0.0"
+        INFOPLIST_KEY_CFBundleDisplayName: Osmo AI
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
+        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads: NO
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Speech recognition is used to transcribe your voice commands."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Microphone access is needed to record your voice for speech-to-text."
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_IDENTITY: "Apple Development"
+    info:
+      path: MacOS/Info-macOS.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLName: "com.gurjeet.osmoai-macos"
+            CFBundleURLSchemes:
+              - osmo
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

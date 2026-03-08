@@ -1,16 +1,12 @@
 import AVFoundation
 import Speech
 
-/// Nonisolated speech recognizer — all callbacks run safely off the main actor.
-/// Transcript updates are delivered via `onTranscript` callback to the main actor owner.
-nonisolated final class SpeechRecognizer: @unchecked Sendable {
+/// macOS speech recognizer — no AVAudioSession (macOS doesn't use it).
+nonisolated final class MacSpeechRecognizer: @unchecked Sendable {
 
-    // Callback for transcript updates — set by AppViewModel on MainActor
     var onTranscript: (@Sendable (String) -> Void)?
-    var onFinalTranscript: (@Sendable (String) -> Void)?
     var onError: (@Sendable (String) -> Void)?
 
-    // Read-only state (set internally, read from MainActor via AppViewModel)
     private(set) var lastTranscript: String = ""
     private(set) var isRecording: Bool = false
     var error: String?
@@ -21,7 +17,6 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
     private let speechRecognizer: SFSpeechRecognizer?
     private var isAuthorized = false
     private var audioFile: AVAudioFile?
-    /// URL of the recorded audio file (m4a). Available after stopRecording().
     private(set) var recordedAudioURL: URL?
 
     init(locale: Locale = .current) {
@@ -33,13 +28,13 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
     func requestAuthorization() async -> Bool {
         if isAuthorized { return true }
 
-        let currentSpeechStatus = SFSpeechRecognizer.authorizationStatus()
-        if currentSpeechStatus == .denied || currentSpeechStatus == .restricted {
+        let currentStatus = SFSpeechRecognizer.authorizationStatus()
+        if currentStatus == .denied || currentStatus == .restricted {
             error = "Speech recognition not authorized"
             return false
         }
 
-        if currentSpeechStatus == .notDetermined {
+        if currentStatus == .notDetermined {
             let granted = await withUnsafeContinuation { continuation in
                 SFSpeechRecognizer.requestAuthorization { status in
                     continuation.resume(returning: status == .authorized)
@@ -51,15 +46,15 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
             }
         }
 
-        let micStatus = AVAudioApplication.shared.recordPermission
-        if micStatus == .denied {
+        // macOS mic permission via AVCaptureDevice
+        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        if micStatus == .denied || micStatus == .restricted {
             error = "Microphone access not authorized"
             return false
         }
-
-        if micStatus == .undetermined {
-            let micGranted = await AVAudioApplication.requestRecordPermission()
-            guard micGranted else {
+        if micStatus == .notDetermined {
+            let granted = await AVCaptureDevice.requestAccess(for: .audio)
+            guard granted else {
                 error = "Microphone access not authorized"
                 return false
             }
@@ -79,15 +74,6 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
             return
         }
 
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.duckOthers, .defaultToSpeaker])
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-
-        guard audioSession.isInputAvailable else {
-            error = "No audio input available"
-            return
-        }
-
         let engine = AVAudioEngine()
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
@@ -100,14 +86,13 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
             return
         }
 
-        // Set up audio file for Whisper upload
+        // Audio file for Whisper upload
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("osmo_recording.wav")
         try? FileManager.default.removeItem(at: tempURL)
         let wavFile = try? AVAudioFile(forWriting: tempURL, settings: recordingFormat.settings)
         self.audioFile = wavFile
         self.recordedAudioURL = tempURL
 
-        // Install audio tap FIRST (before starting engine or recognition)
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { buffer, _ in
             request.append(buffer)
             try? wavFile?.write(from: buffer)
@@ -116,29 +101,18 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
         engine.prepare()
         try engine.start()
 
-        // Capture callbacks as local lets to avoid capturing self in the handler
         let transcriptCallback = self.onTranscript
-        let finalCallback = self.onFinalTranscript
         let errorCallback = self.onError
 
-        // Start recognition AFTER engine is running
         recognitionTask = speechRecognizer.recognitionTask(with: request) { result, taskError in
             if let result {
                 let text = result.bestTranscription.formattedString
                 transcriptCallback?(text)
-                if result.isFinal {
-                    finalCallback?(text)
-                }
             }
             if let taskError {
-                // Suppress cancellation errors — these fire normally when stopping recording
                 let nsError = taskError as NSError
-                if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 216 {
-                    return // "Recognition request was canceled" — expected on stop
-                }
-                if nsError.code == 1 || nsError.code == 301 {
-                    return // Other expected cancellation/timeout codes
-                }
+                if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 216 { return }
+                if nsError.code == 1 || nsError.code == 301 { return }
                 errorCallback?(taskError.localizedDescription)
             }
         }
@@ -161,13 +135,10 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
         audioEngine = nil
         recognitionRequest = nil
         recognitionTask = nil
-        audioFile = nil  // close the file
+        audioFile = nil
         isRecording = false
-
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
-    /// Returns the recorded audio data (WAV) if available, then cleans up the temp file.
     func consumeRecordedAudio() -> Data? {
         guard let url = recordedAudioURL else { return nil }
         defer {
@@ -175,12 +146,5 @@ nonisolated final class SpeechRecognizer: @unchecked Sendable {
             recordedAudioURL = nil
         }
         return try? Data(contentsOf: url)
-    }
-
-    /// Stops recording and returns the final transcript, or nil if nothing was captured.
-    func finishAndReturnTranscript() -> String? {
-        let finalText = lastTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-        stopRecording()
-        return finalText.isEmpty ? nil : finalText
     }
 }

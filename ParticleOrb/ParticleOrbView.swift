@@ -13,7 +13,6 @@ struct ParticleOrbView: View {
     @State private var system = ParticleSystem()
     @State private var opacity: Double = 0.0
     @State private var startDate = Date()
-    @State private var glowIntensity: Float = 0.0
 
     // Per-particle fade-in tracking (two scalars — no shared mutable array)
     @State private var countChangeTime: TimeInterval = 0
@@ -27,6 +26,7 @@ struct ParticleOrbView: View {
     // Drag/tap detection
     @State private var dragStartTime: Date?
     @State private var dragStartLocation: CGPoint?
+    @State private var orbGlobalFrame: CGRect?
 
     // Pre-rendered sprite
     @State private var spriteImage: CGImage?
@@ -56,6 +56,14 @@ struct ParticleOrbView: View {
             .frame(width: canvasSize, height: canvasSize)
             .opacity(opacity)
             .contentShape(Circle())
+            .overlay(
+                GeometryReader { geo in
+                    Color.clear.preference(key: OrbFrameKey.self, value: geo.frame(in: .global))
+                }
+            )
+            .onPreferenceChange(OrbFrameKey.self) { frame in
+                orbGlobalFrame = frame
+            }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -72,6 +80,15 @@ struct ParticleOrbView: View {
                         let touchY = Float(value.location.y - center.y)
                         system.applyTouch(at: SIMD2<Float>(touchX, touchY))
 
+                        // Propagate touch to global state for background star/comet interaction
+                        if let frame = orbGlobalFrame {
+                            viewModel.globalTouchPoint = CGPoint(
+                                x: frame.origin.x + value.location.x,
+                                y: frame.origin.y + value.location.y
+                            )
+                            viewModel.globalTouchActive = true
+                        }
+
                         // Transition to armed on touch-down when idle
                         if stateMachine.currentState == .idle {
                             stateMachine.transition(to: .armed, at: CACurrentMediaTime(), envelope: .quick)
@@ -82,9 +99,11 @@ struct ParticleOrbView: View {
                         if let startLoc = dragStartLocation {
                             let dy = value.location.y - startLoc.y
                             if dy < -50 {
+                                HapticEngine.swipe()
                                 viewModel.showControlCenter = true
                                 dragStartTime = nil
                                 dragStartLocation = nil
+                                viewModel.globalTouchActive = false
                                 return
                             }
                         }
@@ -97,16 +116,19 @@ struct ParticleOrbView: View {
                             let dy = value.location.y - startLoc.y
                             let dist = sqrt(dx * dx + dy * dy)
                             if held >= 0.5 && dist < 15 {
+                                HapticEngine.tap()
                                 system.explode()
                                 viewModel.startPhotoThenVoice()
                                 dragStartTime = nil
                                 dragStartLocation = nil
+                                viewModel.globalTouchActive = false
                             }
                         }
                     }
                     .onEnded { value in
                         guard interactionEnabled else { return }
                         system.releaseTouch()
+                        viewModel.globalTouchActive = false
 
                         // Detect tap: short duration + minimal movement
                         if let start = dragStartTime,
@@ -145,7 +167,8 @@ struct ParticleOrbView: View {
                 previousVisibleCount = 0
             }
             .opacity(viewModel.orbPhase == .cameraTransition ? 0.0 : 1.0)
-            .animation(.easeInOut(duration: 0.6).delay(0.1), value: viewModel.orbPhase == .cameraTransition)
+            .scaleEffect(viewModel.orbPhase == .cameraTransition ? 0.3 : 1.0)
+            .animation(.easeInOut(duration: 0.7), value: viewModel.orbPhase == .cameraTransition)
             .onChange(of: visibleParticleCount) { oldCount, newCount in
                 guard newCount > 0, newCount != oldCount else { return }
                 previousVisibleCount = oldCount
@@ -184,73 +207,56 @@ struct ParticleOrbView: View {
 
     // MARK: - Particle Canvas
 
+    /// Advance physics, state machine, and glow — called once per frame outside the Canvas closure.
+    private func tickSimulation(time: Double, target: Float) -> (globalScale: CGFloat, glow: Double) {
+        let stateElapsed = time - stateEntryTime
+        let stateProgress = Float(min(stateElapsed / 2.0, 1.0))
+        let dt = Float(min(max(time - (system.lastFrameTime ?? time), 0), 1.0 / 30.0))
+        var modulation = activeController.modulate(time: Float(time), dt: dt, stateProgress: stateProgress)
+        let _ = stateMachine.update(at: time)
+        modulation.globalScale *= stateMachine.envelopeScale
+        system.update(at: time, modulation: modulation)
+
+        // Ramp glow on the system (class property, not @State)
+        let glowDt = Float(min(max(time - (system.lastFrameTime ?? time), 0), 1.0 / 30.0))
+        system.glowIntensity += (target - system.glowIntensity) * min(3.0 * glowDt, 1.0)
+
+        return (CGFloat(modulation.globalScale), Double(system.glowIntensity))
+    }
+
     private var particleCanvas: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 120.0)) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate
             let elapsed = timeline.date.timeIntervalSince(startDate)
-            let target = targetGlow
+            let result = tickSimulation(time: time, target: targetGlow)
+            let glow = result.glow
+            let globalScale = result.globalScale
+            let particles = system.particles
+            let prevCount = previousVisibleCount
+            let changeTime = countChangeTime
+            let sprite = spriteImage
+            let isReduceMotion = reduceMotion
+            let fullCount = isReduceMotion ? min(50, particles.count) : particles.count
+            let pCount = visibleParticleCount > 0 ? min(visibleParticleCount, fullCount) : fullCount
 
             Canvas { context, size in
-                os_signpost(.begin, log: pointsOfInterest, name: "OrbFrame")
-
-                // Compute state progress for motion controllers
-                let stateElapsed = time - stateEntryTime
-                let stateProgress = Float(min(stateElapsed / 2.0, 1.0)) // ~2s state lifetime
-
-                // Get modulation from active controller
-                let dt = Float(min(max(time - (system.lastFrameTime ?? time), 0), 1.0 / 30.0))
-                var modulation = activeController.modulate(time: Float(time), dt: dt, stateProgress: stateProgress)
-
-                // Apply envelope scale from state machine
-                let _ = stateMachine.update(at: time)
-                let envScale = stateMachine.envelopeScale
-                modulation.globalScale *= envScale
-
-                // Reduce motion: fewer particles, no bobbing, near-instant morph
-                let fullCount = reduceMotion ? min(50, system.particles.count) : system.particles.count
-                let particleCount = visibleParticleCount > 0 ? min(visibleParticleCount, fullCount) : fullCount
-
-                os_signpost(.begin, log: pointsOfInterest, name: "OrbUpdate")
-                system.update(at: time, modulation: modulation)
-                os_signpost(.end, log: pointsOfInterest, name: "OrbUpdate")
-
-                // Smoothly ramp glowIntensity toward target (~0.5s ease)
-                let speed: Float = 3.0
-                let glowDt = Float(min(max(time - (system.lastFrameTime ?? time), 0), 1.0 / 30.0))
-                glowIntensity += (target - glowIntensity) * min(speed * glowDt, 1.0)
-                let glow = Double(glowIntensity)
-
                 let center = CGPoint(x: size.width / 2, y: size.height / 2)
-                let bobY = reduceMotion ? 0.0 : (sin(elapsed * 0.6) * 2.0 + sin(elapsed * 1.1) * 1.0)
-                let globalScale = CGFloat(modulation.globalScale)
-
-                // Gradual glow multipliers
+                let bobY = isReduceMotion ? 0.0 : (sin(elapsed * 0.6) * 2.0 + sin(elapsed * 1.1) * 1.0)
                 let glowBoost = 1.0 + glow * 0.8
                 let coreBoost = 1.0 + glow * 0.4
 
-                os_signpost(.begin, log: pointsOfInterest, name: "OrbDraw")
-
-                for idx in 0..<particleCount {
-                    let particle = system.particles[idx]
-                    let scaledX = CGFloat(particle.position.x) * globalScale
-                    let scaledY = CGFloat(particle.position.y) * globalScale
-                    let screenX = center.x + scaledX
-                    let screenY = center.y + scaledY + bobY
+                for idx in 0..<pCount {
+                    let particle = particles[idx]
+                    let screenX = center.x + CGFloat(particle.position.x) * globalScale
+                    let screenY = center.y + CGFloat(particle.position.y) * globalScale + bobY
                     let pos = CGPoint(x: screenX, y: screenY)
 
                     let alpha = Double(particle.brightness)
-                    let revealAlpha: Double
-                    if idx < previousVisibleCount {
-                        // Already-visible particles: fully revealed
-                        revealAlpha = 1.0
-                    } else {
-                        // Newly added particles: fade in from countChangeTime over 1.2s
-                        revealAlpha = min(1.0, max(0.0, (time - countChangeTime) / 1.2))
-                    }
+                    let revealAlpha: Double = idx < prevCount ? 1.0
+                        : min(1.0, max(0.0, (time - changeTime) / 1.2))
                     let finalAlpha = alpha * revealAlpha
 
-                    // Try sprite-based drawing first
-                    if let sprite = spriteImage {
+                    if let sprite {
                         let spriteSize = CGFloat(particle.size) * CGFloat(5.0 + glow * 2.0) * 2.0
                         let spriteRect = CGRect(
                             x: pos.x - spriteSize / 2,
@@ -262,7 +268,6 @@ struct ParticleOrbView: View {
                         context.draw(Image(decorative: sprite, scale: 1.0), in: spriteRect)
                         context.opacity = 1.0
                     } else {
-                        // Fallback: original radialGradient draws
                         let glowRadius = CGFloat(particle.size) * CGFloat(5.0 + glow * 2.0)
                         let glowRect = CGRect(
                             x: pos.x - glowRadius,
@@ -306,9 +311,6 @@ struct ParticleOrbView: View {
                         )
                     }
                 }
-
-                os_signpost(.end, log: pointsOfInterest, name: "OrbDraw")
-                os_signpost(.end, log: pointsOfInterest, name: "OrbFrame")
             }
             .allowsHitTesting(false)
         }
@@ -365,13 +367,19 @@ struct ParticleOrbView: View {
     // MARK: - Actions
 
     private func handleTap() {
-        let impact = UIImpactFeedbackGenerator(style: .soft)
-        impact.impactOccurred()
-
         if viewModel.isRecording {
+            HapticEngine.recordStop()
             viewModel.stopRecordingAndSend()
         } else {
+            HapticEngine.recordStart()
             viewModel.startRecording()
         }
+    }
+}
+
+private struct OrbFrameKey: PreferenceKey {
+    static let defaultValue: CGRect? = nil
+    static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+        value = nextValue() ?? value
     }
 }

@@ -53,6 +53,8 @@ struct MarkdownContentView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(.white.opacity(0.06))
                 )
+        case .table(let headers, let rows):
+            tableView(headers: headers, rows: rows)
         case .mathBlock(let expr):
             Text(expr)
                 .font(.system(size: 15, weight: .light, design: .serif))
@@ -71,6 +73,50 @@ struct MarkdownContentView: View {
                 .fill(.white.opacity(0.1))
                 .frame(height: 0.5)
                 .padding(.vertical, 2)
+        }
+    }
+
+    private func tableView(headers: [String], rows: [MarkdownTableRow]) -> some View {
+        let colCount = max(headers.count, rows.first?.cells.count ?? 0)
+
+        return ScrollView(.horizontal, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header row
+                HStack(spacing: 0) {
+                    ForEach(0..<colCount, id: \.self) { col in
+                        Text(col < headers.count ? headers[col] : "")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(2)
+                            .frame(minWidth: 60, maxWidth: 180, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                    }
+                }
+                .background(Color.white.opacity(0.08))
+
+                // Data rows
+                ForEach(Array(rows.enumerated()), id: \.offset) { rowIdx, row in
+                    HStack(spacing: 0) {
+                        ForEach(0..<colCount, id: \.self) { col in
+                            Text(col < row.cells.count ? row.cells[col] : "")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white.opacity(0.7))
+                                .lineLimit(3)
+                                .frame(minWidth: 60, maxWidth: 180, alignment: .leading)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                        }
+                    }
+                    .background(rowIdx % 2 == 0 ? Color.white.opacity(0.03) : Color.clear)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.04))
+                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 

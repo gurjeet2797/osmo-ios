@@ -3,6 +3,7 @@ import UIKit
 
 struct VisionCameraView: UIViewControllerRepresentable {
     let onCapture: (UIImage) -> Void
+    let onDismiss: () -> Void
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -14,14 +15,16 @@ struct VisionCameraView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onCapture: onCapture)
+        Coordinator(onCapture: onCapture, onDismiss: onDismiss)
     }
 
     final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let onCapture: (UIImage) -> Void
+        let onDismiss: () -> Void
 
-        init(onCapture: @escaping (UIImage) -> Void) {
+        init(onCapture: @escaping (UIImage) -> Void, onDismiss: @escaping () -> Void) {
             self.onCapture = onCapture
+            self.onDismiss = onDismiss
         }
 
         nonisolated func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
@@ -34,7 +37,7 @@ struct VisionCameraView: UIViewControllerRepresentable {
 
         nonisolated func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             Task { @MainActor in
-                picker.dismiss(animated: true)
+                onDismiss()
             }
         }
     }

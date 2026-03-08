@@ -5,7 +5,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import attachments, auth, calendar, command, health, notifications, preferences, subscription, suggestions, widgets
+from app.api import attachments, auth, calendar, command, health, messages, notifications, preferences, subscription, suggestions, widgets
 from app.config import settings
 from app.db.session import engine, redis_pool
 
@@ -78,3 +78,4 @@ app.include_router(notifications.router, prefix="/notifications", tags=["notific
 app.include_router(preferences.router, prefix="/preferences", tags=["preferences"])
 app.include_router(subscription.router, prefix="/subscription", tags=["subscription"])
 app.include_router(widgets.router, prefix="/widgets", tags=["widgets"])
+app.include_router(messages.router, prefix="/messages", tags=["messages"])

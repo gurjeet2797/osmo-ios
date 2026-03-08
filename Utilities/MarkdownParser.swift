@@ -10,6 +10,10 @@ enum MarkdownSpan: Sendable, Equatable {
     case math(String)          // inline $...$ math
 }
 
+struct MarkdownTableRow: Sendable, Equatable {
+    let cells: [String]
+}
+
 enum MarkdownBlock: Sendable, Equatable {
     case heading(level: Int, text: String)
     case paragraph([MarkdownSpan])
@@ -17,6 +21,7 @@ enum MarkdownBlock: Sendable, Equatable {
     case numberedList([[MarkdownSpan]])
     case codeBlock(language: String?, code: String)
     case mathBlock(String)     // display $$...$$ math
+    case table(headers: [String], rows: [MarkdownTableRow])
     case divider
 }
 
@@ -132,12 +137,20 @@ enum MarkdownParser {
                 continue
             }
 
+            // Table: line starts and ends with |, or contains | separators
+            if isTableLine(trimmed) {
+                if let table = parseTable(lines: lines, startIndex: &i) {
+                    blocks.append(table)
+                    continue
+                }
+            }
+
             // Paragraph (may span multiple non-blank lines)
             var paraLines: [String] = []
             while i < lines.count {
                 let l = lines[i]
                 let t = l.trimmingCharacters(in: .whitespaces)
-                if t.isEmpty || t.hasPrefix("#") || t.hasPrefix("```") || isBulletLine(t) || isNumberedLine(t) {
+                if t.isEmpty || t.hasPrefix("#") || t.hasPrefix("```") || isBulletLine(t) || isNumberedLine(t) || isTableLine(t) {
                     break
                 }
                 paraLines.append(t)
@@ -237,6 +250,13 @@ enum MarkdownParser {
         // Remove code fences
         result = result.replacingOccurrences(
             of: #"```[a-zA-Z]*\n?"#, with: "", options: .regularExpression)
+        // Remove table separator lines
+        result = result.replacingOccurrences(
+            of: #"(?m)^\|[-:|\s]+\|$\n?"#, with: "", options: .regularExpression)
+        // Clean up table pipe syntax: | col | col | → col  col
+        result = result.replacingOccurrences(
+            of: #"(?m)^\|(.+)\|$"#, with: "$1", options: .regularExpression)
+        result = result.replacingOccurrences(of: " | ", with: "  ")
         // Remove display math delimiters
         result = result.replacingOccurrences(of: "$$", with: "")
         // Remove inline math delimiters (single $)
@@ -261,6 +281,61 @@ enum MarkdownParser {
 
     private static func isBulletLine(_ line: String) -> Bool {
         (line.hasPrefix("- ") || line.hasPrefix("* ")) && line.count > 2
+    }
+
+    private static func isTableLine(_ line: String) -> Bool {
+        let t = line.trimmingCharacters(in: .whitespaces)
+        return t.contains("|") && t.filter({ $0 == "|" }).count >= 2
+    }
+
+    private static func isTableSeparatorLine(_ line: String) -> Bool {
+        let t = line.trimmingCharacters(in: .whitespaces)
+        // e.g. |---|---|---| or |:---:|:---|
+        let stripped = t.replacingOccurrences(of: "|", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: ":", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return stripped.isEmpty && t.contains("-")
+    }
+
+    private static func parseTableCells(_ line: String) -> [String] {
+        var t = line.trimmingCharacters(in: .whitespaces)
+        if t.hasPrefix("|") { t = String(t.dropFirst()) }
+        if t.hasSuffix("|") { t = String(t.dropLast()) }
+        return t.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+
+    private static func parseTable(lines: [String], startIndex i: inout Int) -> MarkdownBlock? {
+        let headerLine = lines[i].trimmingCharacters(in: .whitespaces)
+        let headers = parseTableCells(headerLine)
+        guard headers.count >= 2 else { return nil }
+
+        // Check for separator line
+        let nextIndex = i + 1
+        guard nextIndex < lines.count else {
+            i += 1
+            return .table(headers: headers, rows: [])
+        }
+
+        let nextLine = lines[nextIndex].trimmingCharacters(in: .whitespaces)
+
+        // Advance past header + separator (if present)
+        if isTableSeparatorLine(nextLine) {
+            i = nextIndex + 1
+        } else {
+            i += 1
+        }
+
+        var rows: [MarkdownTableRow] = []
+        while i < lines.count {
+            let l = lines[i].trimmingCharacters(in: .whitespaces)
+            guard isTableLine(l), !isTableSeparatorLine(l), !l.isEmpty else { break }
+            let cells = parseTableCells(l)
+            rows.append(MarkdownTableRow(cells: cells))
+            i += 1
+        }
+
+        return .table(headers: headers, rows: rows)
     }
 
     private static func isNumberedLine(_ line: String) -> Bool {

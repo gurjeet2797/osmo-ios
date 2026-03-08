@@ -1,6 +1,11 @@
 import AuthenticationServices
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 @Observable
 final class AuthManager {
@@ -73,6 +78,9 @@ final class AuthManager {
 
     func signOut() {
         KeychainHelper.deleteAll()
+        #if os(iOS)
+        SharedKeychain.deleteToken()
+        #endif
         isAuthenticated = false
         userEmail = nil
         userName = nil
@@ -137,6 +145,10 @@ final class AuthManager {
         }
 
         KeychainHelper.save(token, for: .authToken)
+        #if os(iOS)
+        // Also save to shared keychain for the Share Extension
+        SharedKeychain.saveToken(token)
+        #endif
 
         if let email = params["email"] {
             KeychainHelper.save(email, for: .userEmail)
@@ -154,11 +166,15 @@ final class AuthManager {
 
 private final class WebAuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        #if os(macOS)
+        return NSApplication.shared.keyWindow ?? ASPresentationAnchor()
+        #else
         guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
               let window = scene.windows.first(where: { $0.isKeyWindow })
         else {
             return ASPresentationAnchor()
         }
         return window
+        #endif
     }
 }

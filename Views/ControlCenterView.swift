@@ -6,6 +6,7 @@ struct ControlCenterView: View {
 
     @State private var selectedTab: Tab = .calendar
     @State private var currentMonth = Date()
+    @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
 
     enum Tab: String, CaseIterable {
         case calendar = "Calendar"
@@ -26,6 +27,7 @@ struct ControlCenterView: View {
             HStack(spacing: 2) {
                 ForEach(Tab.allCases, id: \.self) { tab in
                     Button {
+                        HapticEngine.tick()
                         withAnimation(.easeInOut(duration: 0.25)) {
                             selectedTab = tab
                         }
@@ -111,6 +113,7 @@ struct ControlCenterView: View {
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     currentMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+                    updateSelectedDateForMonth()
                 }
             } label: {
                 Image(systemName: "chevron.left")
@@ -129,6 +132,7 @@ struct ControlCenterView: View {
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     currentMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+                    updateSelectedDateForMonth()
                 }
             } label: {
                 Image(systemName: "chevron.right")
@@ -141,7 +145,7 @@ struct ControlCenterView: View {
     private var dayOfWeekLabels: some View {
         let symbols = Calendar.current.veryShortWeekdaySymbols
         return HStack(spacing: 0) {
-            ForEach(symbols, id: \.self) { symbol in
+            ForEach(Array(symbols.enumerated()), id: \.offset) { _, symbol in
                 Text(symbol)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.3))
@@ -158,14 +162,27 @@ struct ControlCenterView: View {
             ForEach(days, id: \.self) { day in
                 if let day {
                     let isToday = Calendar.current.isDateInToday(day)
-                    Text("\(Calendar.current.component(.day, from: day))")
-                        .font(.system(size: 14, weight: isToday ? .bold : .regular))
-                        .foregroundStyle(isToday ? .white : .white.opacity(0.6))
-                        .frame(width: 36, height: 36)
-                        .background(
-                            Circle()
-                                .fill(isToday ? .white.opacity(0.15) : .clear)
-                        )
+                    let isSelected = Calendar.current.isDate(day, inSameDayAs: selectedDate)
+                    Button {
+                        HapticEngine.tick()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedDate = Calendar.current.startOfDay(for: day)
+                        }
+                    } label: {
+                        Text("\(Calendar.current.component(.day, from: day))")
+                            .font(.system(size: 14, weight: (isToday || isSelected) ? .bold : .regular))
+                            .foregroundStyle((isToday || isSelected) ? .white : .white.opacity(0.6))
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle()
+                                    .fill(isSelected ? .white.opacity(0.25) : .clear)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(.white.opacity(0.2), lineWidth: (isToday && !isSelected) ? 1 : 0)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 } else {
                     Color.clear
                         .frame(width: 36, height: 36)
@@ -176,7 +193,8 @@ struct ControlCenterView: View {
 
     private var upcomingEvents: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("UPCOMING")
+            // Selected day header
+            Text(selectedDayHeaderString)
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                 .tracking(2)
                 .foregroundStyle(.white.opacity(0.3))
@@ -190,20 +208,58 @@ struct ControlCenterView: View {
                     Spacer()
                 }
                 .padding(.vertical, 20)
-            } else if viewModel.upcomingEvents.isEmpty {
-                Text("No upcoming events")
-                    .font(.system(size: 13, weight: .light, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.25))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
             } else {
-                ForEach(viewModel.upcomingEvents) { event in
-                    eventRow(time: event.formattedTime, title: event.title)
+                let dayEvents = selectedDayEvents
+                if dayEvents.isEmpty {
+                    Text("No events")
+                        .font(.system(size: 13, weight: .light, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.25))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                } else {
+                    ForEach(dayEvents) { event in
+                        eventRow(time: event.formattedTime, title: event.title)
+                    }
+                }
+
+                // Coming up — next 2 days
+                let upcoming = nextTwoDaysSummary
+                if !upcoming.isEmpty {
+                    Text("COMING UP")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .tracking(2)
+                        .foregroundStyle(.white.opacity(0.3))
+                        .padding(.top, 12)
+
+                    ForEach(upcoming, id: \.date) { entry in
+                        Text(dayHeaderString(for: entry.date))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.4))
+                            .padding(.top, 4)
+
+                        if entry.events.isEmpty {
+                            Text("No events")
+                                .font(.system(size: 12, weight: .light, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.2))
+                                .padding(.leading, 4)
+                        } else {
+                            ForEach(entry.events) { event in
+                                eventRow(time: event.formattedTime, title: event.title)
+                            }
+                        }
+                    }
                 }
             }
         }
         .task {
             viewModel.fetchUpcomingEvents(days: 7)
+        }
+        .onChange(of: selectedDate) {
+            let cal = Calendar.current
+            let daysOut = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: selectedDate).day ?? 0
+            if daysOut > 5 {
+                viewModel.fetchUpcomingEvents(days: min(daysOut + 3, 14), forceRefresh: true)
+            }
         }
     }
 
@@ -275,7 +331,7 @@ struct ControlCenterView: View {
             }
         }
         .task {
-            viewModel.fetchWidgetData()
+            viewModel.fetchWidgetData(forceRefresh: true)
         }
     }
 
@@ -406,6 +462,7 @@ struct ControlCenterView: View {
             Toggle("", isOn: Binding(
                 get: { isOn },
                 set: { newValue in
+                    HapticEngine.tick()
                     if newValue {
                         viewModel.homeWidgets.append(widget)
                     } else {
@@ -449,5 +506,62 @@ struct ControlCenterView: View {
         }
 
         return days
+    }
+
+    // MARK: - Date Selection Helpers
+
+    private func updateSelectedDateForMonth() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        // If today is in the new month, select today; otherwise select the 1st
+        let monthComponents = cal.dateComponents([.year, .month], from: currentMonth)
+        let todayComponents = cal.dateComponents([.year, .month], from: today)
+        if monthComponents.year == todayComponents.year && monthComponents.month == todayComponents.month {
+            selectedDate = today
+        } else if let firstOfMonth = cal.date(from: monthComponents) {
+            selectedDate = firstOfMonth
+        }
+    }
+
+    private func events(for date: Date) -> [CalendarEvent] {
+        let cal = Calendar.current
+        return viewModel.upcomingEvents.filter { event in
+            guard let eventDate = event.startDate else { return false }
+            return cal.isDate(eventDate, inSameDayAs: date)
+        }
+    }
+
+    private var selectedDayEvents: [CalendarEvent] {
+        events(for: selectedDate)
+    }
+
+    private var nextTwoDaysSummary: [(date: Date, events: [CalendarEvent])] {
+        let cal = Calendar.current
+        return (1...2).compactMap { offset in
+            guard let date = cal.date(byAdding: .day, value: offset, to: selectedDate) else { return nil }
+            return (date: date, events: events(for: date))
+        }
+    }
+
+    private var selectedDayHeaderString: String {
+        if Calendar.current.isDateInToday(selectedDate) {
+            return "TODAY"
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        return formatter.string(from: selectedDate).uppercased()
+    }
+
+    private func dayHeaderString(for date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date) {
+            return "Today"
+        }
+        if cal.isDateInTomorrow(date) {
+            return "Tomorrow"
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        return formatter.string(from: date)
     }
 }

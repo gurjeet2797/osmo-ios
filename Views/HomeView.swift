@@ -14,25 +14,20 @@ struct HomeView: View {
     @State private var lineWidth: CGFloat = 0
     @State private var subtitleOpacity: Double = 0
     @State private var bottomBarOpacity: Double = 0
-    @State private var tipIndex: Int = 0
-    @State private var tipOpacity: Double = 1.0
-
-    private let tips: [String] = [
-        "what can i help with?",
-        "try: \"remind me to call mom at 5pm\"",
-        "say: \"take a photo\"",
-        "try: \"play some lo-fi music\"",
-        "say: \"set brightness to 50%\"",
-        "try: \"text Sarah i'm on my way\"",
-        "say: \"what's on my calendar today?\"",
-        "try: \"turn on the flashlight\"",
-    ]
+    @State private var responseOverflows: Bool = false
+    @State private var guideTipCenter: CGPoint?
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            CosmicBackground(showComet: onboarding.isActive)
+            CosmicBackground(
+                showComet: onboarding.isActive,
+                guideTarget: guideTipCenter,
+                cometFriendly: viewModel.hasUsedRecording,
+                externalTouchPoint: viewModel.globalTouchPoint,
+                externalTouchActive: viewModel.globalTouchActive
+            )
 
             VStack(spacing: 0) {
                 // Top bar with auth — hidden during onboarding
@@ -170,21 +165,20 @@ struct HomeView: View {
                 onboarding.advance()
             }
         }
+        .onChange(of: onboarding.isActive) { _, isActive in
+            if !isActive {
+                // Onboarding just completed — start post-onboarding guide
+                Task {
+                    try? await Task.sleep(for: .seconds(1.0))
+                    viewModel.startGuideIfNeeded()
+                }
+            }
+        }
         .task {
-            // Wait for entrance animation to finish
-            try? await Task.sleep(for: .seconds(3.0))
-            // Rotate tips every 4 seconds (paused while response is showing or onboarding)
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(4.0))
-                guard viewModel.lastSpokenResponse == nil, !onboarding.isActive else { continue }
-                withAnimation(.easeOut(duration: 0.5)) {
-                    tipOpacity = 0
-                }
-                try? await Task.sleep(for: .seconds(0.5))
-                tipIndex = (tipIndex + 1) % tips.count
-                withAnimation(.easeIn(duration: 0.5)) {
-                    tipOpacity = 1.0
-                }
+            // If onboarding was already completed in a prior session, start guide on appear
+            if !onboarding.isActive {
+                try? await Task.sleep(for: .seconds(2.5))
+                viewModel.startGuideIfNeeded()
             }
         }
     }
@@ -339,42 +333,96 @@ struct HomeView: View {
                 .transition(.opacity)
         }
 
-        // Subtitle area: LLM response (typewriter), widget cards, or rotating tips
+        // Subtitle area: LLM response (typewriter), widget cards, or guide tips
         Group {
             if viewModel.lastSpokenResponse != nil {
-                ScrollView {
-                    Text(MarkdownParser.stripMarkdown(viewModel.displayedResponse))
-                        .font(.system(size: 13, weight: .light))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity, minHeight: 300, alignment: .center)
-                        .padding(.bottom, 20)
+                VStack(spacing: 0) {
+                    GeometryReader { geo in
+                        ScrollView {
+                            VStack(spacing: 6) {
+                                Text(MarkdownParser.stripMarkdown(viewModel.displayedResponse))
+                                    .font(.system(size: 13, weight: .light))
+                                    .foregroundStyle(.white)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+
+                                // Guide hint right below response text
+                                if viewModel.guideStep == .tapToType {
+                                    guideTapToTypeHint
+                                }
+                            }
+                            .padding(.vertical, 8)
+                            .background(
+                                GeometryReader { contentGeo in
+                                    Color.clear
+                                        .onChange(of: viewModel.displayedResponse) { _, _ in
+                                            responseOverflows = contentGeo.size.height > geo.size.height
+                                        }
+                                        .onAppear {
+                                            responseOverflows = contentGeo.size.height > geo.size.height
+                                        }
+                                }
+                            )
+                            .frame(minHeight: geo.size.height)
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .scrollIndicators(.hidden)
+                    }
+                    .frame(maxHeight: 560)
+                    .mask(
+                        VStack(spacing: 0) {
+                            LinearGradient(
+                                colors: [.clear, .black],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 16)
+                            Color.black
+                            LinearGradient(
+                                colors: [.black, .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 24)
+                        }
+                    )
+
+                    if responseOverflows && viewModel.guideStep != .tapToType {
+                        HStack(spacing: 4) {
+                            Text("tap for full details")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .tracking(1)
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundStyle(.white.opacity(0.3))
+                        .padding(.top, 4)
+                    }
                 }
-                .frame(maxHeight: 420)
-                .scrollBounceBehavior(.basedOnSize)
-                .scrollIndicators(.hidden)
                 .transition(.opacity)
                 .onTapGesture {
-                    viewModel.showChat = true
+                    HapticEngine.tap()
+                    if viewModel.guideStep == .tapToType {
+                        viewModel.completeGuide()
+                        guideTipCenter = nil
+                    }
+                    viewModel.openChatWithCurrentConversation()
                 }
+            } else if viewModel.guideStep == .nameCheck {
+                guideNameCheckTip
+                    .transition(.opacity)
             } else if hasAnyWidgetData {
                 homeWidgetStack
                     .transition(.opacity)
                     .onTapGesture {
-                        viewModel.showChat = true
+                        HapticEngine.tap()
+                        viewModel.openChatWithCurrentConversation()
                     }
-            } else {
-                Text(tips[tipIndex])
-                    .font(.system(size: 11, weight: .light, design: .monospaced))
-                    .tracking(2)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .opacity(tipOpacity)
-                    .transition(.opacity)
             }
         }
         .opacity(subtitleOpacity)
-        .padding(.top, viewModel.hasUsedRecording ? 0 : 10)
-        .padding(.horizontal, 32)
+        .padding(.top, viewModel.lastSpokenResponse != nil ? 0 : (viewModel.hasUsedRecording ? 0 : 10))
+        .padding(.horizontal, 24)
         .frame(minHeight: 20)
         .animation(.easeInOut(duration: 0.4), value: viewModel.lastSpokenResponse == nil)
     }
@@ -529,6 +577,46 @@ struct HomeView: View {
                 )
             }
         }
+    }
+
+    // MARK: - Guide Tips
+
+    private var guideNameCheckTip: some View {
+        VStack(spacing: 8) {
+            Text("do I have your name right?")
+                .font(.system(size: 13, weight: .light))
+                .foregroundStyle(.white.opacity(0.7))
+                .multilineTextAlignment(.center)
+            Text("tap the orb and say \"my name is...\"")
+                .font(.system(size: 11, weight: .light, design: .monospaced))
+                .tracking(1)
+                .foregroundStyle(.white.opacity(0.4))
+                .multilineTextAlignment(.center)
+        }
+        .background(
+            GeometryReader { geo in
+                Color.clear.onAppear {
+                    let frame = geo.frame(in: .global)
+                    guideTipCenter = CGPoint(x: frame.midX, y: frame.midY)
+                }
+            }
+        )
+    }
+
+    private var guideTapToTypeHint: some View {
+        Text("still wrong? tap here to type it instead")
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
+            .tracking(1)
+            .foregroundStyle(.white.opacity(0.35))
+            .padding(.top, 4)
+            .background(
+                GeometryReader { geo in
+                    Color.clear.onAppear {
+                        let frame = geo.frame(in: .global)
+                        guideTipCenter = CGPoint(x: frame.midX, y: frame.midY)
+                    }
+                }
+            )
     }
 
     // MARK: - Onboarding Actions

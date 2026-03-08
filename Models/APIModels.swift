@@ -10,9 +10,10 @@ struct CommandRequest: Codable, Sendable {
     let latitude: Double?
     let longitude: Double?
     let imageData: String?
+    let platform: String?
 
     enum CodingKeys: String, CodingKey {
-        case transcript, timezone, locale, latitude, longitude
+        case transcript, timezone, locale, latitude, longitude, platform
         case linkedProviders = "linked_providers"
         case imageData = "image_data"
     }
@@ -72,6 +73,7 @@ struct CommandResponse: Codable, Sendable {
     let updatedUserName: String?
     let remainingRequests: Int?
     let clarification: ClarificationResponse?
+    let detectedLanguage: String?
 
     enum CodingKeys: String, CodingKey {
         case spokenResponse = "spoken_response"
@@ -84,6 +86,7 @@ struct CommandResponse: Codable, Sendable {
         case updatedUserName = "updated_user_name"
         case remainingRequests = "remaining_requests"
         case clarification
+        case detectedLanguage = "detected_language"
     }
 
     init(from decoder: Decoder) throws {
@@ -98,6 +101,7 @@ struct CommandResponse: Codable, Sendable {
         updatedUserName = try container.decodeIfPresent(String.self, forKey: .updatedUserName)
         remainingRequests = try container.decodeIfPresent(Int.self, forKey: .remainingRequests)
         clarification = try container.decodeIfPresent(ClarificationResponse.self, forKey: .clarification)
+        detectedLanguage = try container.decodeIfPresent(String.self, forKey: .detectedLanguage)
     }
 }
 

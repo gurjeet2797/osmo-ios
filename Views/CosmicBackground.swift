@@ -21,9 +21,15 @@ struct CometParticle {
     var noiseOffset1: CGFloat = CGFloat.random(in: 0...1000)
     var noiseOffset2: CGFloat = CGFloat.random(in: 0...1000)
     var breathPhase: CGFloat = CGFloat.random(in: 0...(.pi * 2))
-    private static let trailLength = 12
+    /// 0 = shy (flees touch), 1 = friendly (approaches + orbits touch)
+    var friendliness: CGFloat = 0
+    /// Excitement ramps up near touch — drives glow intensity
+    var excitement: CGFloat = 0
+    private static let trailLength = 16
 
-    mutating func update(dt: CGFloat, canvasSize: CGSize, time: Double) {
+    mutating func update(dt: CGFloat, canvasSize: CGSize, time: Double,
+                         guideTarget: CGPoint? = nil,
+                         touchPoint: CGPoint? = nil, touchActive: Bool = false) {
         // Multi-octave sine noise for organic direction changes
         let n1 = sin(noiseOffset1 + CGFloat(time) * 0.7) * 0.6
             + sin(noiseOffset2 + CGFloat(time) * 1.3) * 0.3
@@ -32,38 +38,92 @@ struct CometParticle {
             + cos(noiseOffset1 + CGFloat(time) * 1.1) * 0.3
             + cos(noiseOffset2 * 0.5 + CGFloat(time) * 1.9) * 0.1
 
-        // Breathing speed variation: 20–80 pts/sec
+        // Breathing speed variation
         let breathSpeed = 50 + 30 * sin(breathPhase + CGFloat(time) * 0.4)
 
-        // Steer velocity toward noise direction
-        let targetVx = n1 * breathSpeed
-        let targetVy = n2 * breathSpeed
+        var targetVx = n1 * breathSpeed
+        var targetVy = n2 * breathSpeed
+
+        // Touch interaction: shy (flee) → friendly (approach + orbit)
+        if let touch = touchPoint, touchActive {
+            let dx = touch.x - position.x
+            let dy = touch.y - position.y
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist > 1 {
+                let dirX = dx / dist
+                let dirY = dy / dist
+
+                // Shy behavior: flee from touch
+                let fleeStrength: CGFloat = (1 - friendliness) * 120 * max(0, 1 - dist / 200)
+                targetVx -= dirX * fleeStrength
+                targetVy -= dirY * fleeStrength
+
+                // Friendly behavior: approach + orbit
+                let approachStrength: CGFloat = friendliness * (dist > 60 ? 70 : 25)
+                let orbitPhase = CGFloat(time) * 1.5 + breathPhase
+                let orbitX = cos(orbitPhase) * 40 * friendliness
+                let orbitY = sin(orbitPhase) * 40 * friendliness
+                targetVx += dirX * approachStrength * friendliness + orbitX
+                targetVy += dirY * approachStrength * friendliness + orbitY
+            }
+            // Ramp excitement when near touch
+            let nearness = max(0, 1 - dist / 150)
+            excitement += (nearness - excitement) * min(4 * dt, 1)
+        } else {
+            excitement += (0 - excitement) * min(2 * dt, 1)
+        }
+
+        // Friendliness ramps up gradually (driven externally, but smooth here)
+        // (friendliness is set by CosmicBackground based on hasUsedRecording)
+
+        // Guide attraction (post-onboarding tips)
+        if let target = guideTarget {
+            let dx = target.x - position.x
+            let dy = target.y - position.y
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist > 1 {
+                let dirX = dx / dist
+                let dirY = dy / dist
+                let pullStrength: CGFloat = dist > 80 ? 60 : 20
+                let orbitPhase = CGFloat(time) * 1.2 + breathPhase
+                let orbitX = cos(orbitPhase) * 30
+                let orbitY = sin(orbitPhase) * 30
+                targetVx += dirX * pullStrength + (dist < 80 ? orbitX : 0)
+                targetVy += dirY * pullStrength + (dist < 80 ? orbitY : 0)
+            }
+        }
+
         velocity.x += (targetVx - velocity.x) * dt * 2.0
         velocity.y += (targetVy - velocity.y) * dt * 2.0
 
         position.x += velocity.x * dt
         position.y += velocity.y * dt
 
-        // Screen edge wrapping with margin
-        let margin: CGFloat = 20
-        if position.x < -margin { position.x = canvasSize.width + margin }
-        if position.x > canvasSize.width + margin { position.x = -margin }
-        if position.y < -margin { position.y = canvasSize.height + margin }
-        if position.y > canvasSize.height + margin { position.y = -margin }
+        // Screen edge wrapping (skip when guiding or approaching touch)
+        if guideTarget == nil && !(touchActive && friendliness > 0.5) {
+            let margin: CGFloat = 20
+            if position.x < -margin { position.x = canvasSize.width + margin }
+            if position.x > canvasSize.width + margin { position.x = -margin }
+            if position.y < -margin { position.y = canvasSize.height + margin }
+            if position.y > canvasSize.height + margin { position.y = -margin }
+        }
 
-        // Update trail
+        // Update trail — longer when excited
         trail.append(position)
-        if trail.count > Self.trailLength {
-            trail.removeFirst(trail.count - Self.trailLength)
+        let maxTrail = Self.trailLength + Int(excitement * 8)
+        if trail.count > maxTrail {
+            trail.removeFirst(trail.count - maxTrail)
         }
     }
 
-    func draw(context: GraphicsContext) {
-        // Draw trail: decreasing opacity and size
+    func draw(context: GraphicsContext, time: Double) {
+        let glowBoost = 1.0 + excitement * 1.5
+
+        // Draw trail: decreasing opacity and size, brighter when excited
         for (i, point) in trail.enumerated() {
             let progress = CGFloat(i) / CGFloat(max(trail.count - 1, 1))
-            let alpha = 0.4 * (1.0 - progress)
-            let radius = 0.5 + 2.5 * (1.0 - progress)
+            let alpha = (0.4 + excitement * 0.3) * (1.0 - progress)
+            let radius = (0.5 + 2.5 * (1.0 - progress)) * glowBoost
             let rect = CGRect(
                 x: point.x - radius,
                 y: point.y - radius,
@@ -76,20 +136,23 @@ struct CometParticle {
             )
         }
 
-        // Draw head glow: cyan-tinted
-        let glowRadius: CGFloat = 12
+        // Outer glow — expands with excitement, pulses gently
+        let pulse = 1.0 + 0.15 * sin(CGFloat(time) * 3.0 + breathPhase)
+        let glowRadius: CGFloat = (12 + excitement * 10) * pulse
         let glowRect = CGRect(
             x: position.x - glowRadius,
             y: position.y - glowRadius,
             width: glowRadius * 2,
             height: glowRadius * 2
         )
+        // Hue shifts slightly warmer as friendliness increases
+        let hue = 0.52 + friendliness * 0.08
         context.fill(
             Path(ellipseIn: glowRect),
             with: .radialGradient(
                 Gradient(colors: [
-                    Color(hue: 0.52, saturation: 0.4, brightness: 1.0).opacity(0.25),
-                    Color(hue: 0.52, saturation: 0.3, brightness: 1.0).opacity(0.08),
+                    Color(hue: hue, saturation: 0.4, brightness: 1.0).opacity((0.25 + excitement * 0.2) * glowBoost),
+                    Color(hue: hue, saturation: 0.3, brightness: 1.0).opacity((0.08 + excitement * 0.06) * glowBoost),
                     .clear,
                 ]),
                 center: position,
@@ -98,8 +161,8 @@ struct CometParticle {
             )
         )
 
-        // Draw head core: bright white
-        let coreRadius: CGFloat = 4
+        // Core — bright white, pulses
+        let coreRadius: CGFloat = (4 + excitement * 2) * pulse
         let coreRect = CGRect(
             x: position.x - coreRadius,
             y: position.y - coreRadius,
@@ -110,8 +173,8 @@ struct CometParticle {
             Path(ellipseIn: coreRect),
             with: .radialGradient(
                 Gradient(colors: [
-                    .white.opacity(0.9),
-                    .white.opacity(0.3),
+                    .white.opacity(min(0.9 + excitement * 0.1, 1.0)),
+                    .white.opacity(0.3 + excitement * 0.2),
                     .clear,
                 ]),
                 center: position,
@@ -124,6 +187,12 @@ struct CometParticle {
 
 struct CosmicBackground: View {
     var showComet: Bool = false
+    var guideTarget: CGPoint? = nil
+    /// Set to true once user has sent their first command — comet becomes friendly
+    var cometFriendly: Bool = false
+    /// Global touch from orb or other layers — merged with local touch for seamless interaction
+    var externalTouchPoint: CGPoint? = nil
+    var externalTouchActive: Bool = false
 
     @State private var stars: [FloatingStar] = CosmicBackground.makeStars()
     @State private var touchPoint: CGPoint? = nil
@@ -134,11 +203,12 @@ struct CosmicBackground: View {
     @State private var cometVisible: Bool = false
     @State private var lastCometTime: Date = .distantPast
     @State private var previousTimelineDate: Date?
+    @State private var friendlinessRamp: CGFloat = 0
 
     private static let starCount = 120
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: isInteracting || cometVisible ? 1.0 / 60.0 : 1.0 / 30.0)) { timeline in
+        TimelineView(.animation(minimumInterval: isInteracting || cometVisible || guideTarget != nil ? 1.0 / 60.0 : 1.0 / 30.0)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             let elapsed = timeline.date.timeIntervalSince(startDate)
 
@@ -157,14 +227,15 @@ struct CosmicBackground: View {
                     }
                 }
 
-                if let touch = touchPoint, touchInfluence > 0.01 {
-                    drawTouchGlow(context: context, center: touch)
+                // Touch glow — from local or external (orb) touch
+                if let touch = mergedTouchPoint, mergedTouchInfluence > 0.01 {
+                    drawTouchGlow(context: context, center: touch, influence: mergedTouchInfluence)
                 }
 
                 drawConstellationLines(context: context, positions: positions, time: t, elapsed: elapsed)
 
                 if cometVisible {
-                    comet.draw(context: context)
+                    comet.draw(context: context, time: t)
                 }
             }
             .onChange(of: timeline.date) { _, newDate in
@@ -206,22 +277,38 @@ struct CosmicBackground: View {
 
     // MARK: - Star Positions
 
+    /// Merged touch point: local background touch takes priority, otherwise use external (orb) touch
+    private var mergedTouchPoint: CGPoint? {
+        if let local = touchPoint, touchInfluence > 0.01 { return local }
+        if let ext = externalTouchPoint, externalTouchActive { return ext }
+        return nil
+    }
+
+    private var mergedTouchInfluence: CGFloat {
+        if touchInfluence > 0.01 { return touchInfluence }
+        if externalTouchActive { return 0.6 }  // softer influence from orb touch
+        return 0
+    }
+
     private func computePositions(canvasSize: CGSize, time: Double) -> [CGPoint] {
-        stars.map { star in
+        let activeTouchPoint = mergedTouchPoint
+        let activeTouchInfluence = mergedTouchInfluence
+
+        return stars.map { star in
             let baseX = star.normalizedPosition.x * canvasSize.width
             let baseY = star.normalizedPosition.y * canvasSize.height
             let driftX = cos(CGFloat(time) * star.driftSpeed + star.driftAngle) * 2.0
             let driftY = sin(CGFloat(time) * star.driftSpeed * 0.7 + star.driftAngle) * 2.0
             var pos = CGPoint(x: baseX + driftX, y: baseY + driftY)
 
-            if let touch = touchPoint, touchInfluence > 0.01 {
+            if let touch = activeTouchPoint, activeTouchInfluence > 0.01 {
                 let dx = pos.x - touch.x
                 let dy = pos.y - touch.y
                 let dist = sqrt(dx * dx + dy * dy)
                 let influence: CGFloat = 150
                 if dist < influence && dist > 0 {
                     let t = 1.0 - dist / influence
-                    let force = t * t * 40 * touchInfluence
+                    let force = t * t * 40 * activeTouchInfluence
                     pos.x += (dx / dist) * force
                     pos.y += (dy / dist) * force
                 }
@@ -303,8 +390,8 @@ struct CosmicBackground: View {
         )
     }
 
-    private func drawTouchGlow(context: GraphicsContext, center: CGPoint) {
-        let radius: CGFloat = 60 * touchInfluence
+    private func drawTouchGlow(context: GraphicsContext, center: CGPoint, influence: CGFloat = 1.0) {
+        let radius: CGFloat = 60 * influence
         let rect = CGRect(
             x: center.x - radius,
             y: center.y - radius,
@@ -315,8 +402,8 @@ struct CosmicBackground: View {
             Path(ellipseIn: rect),
             with: .radialGradient(
                 Gradient(colors: [
-                    Color(hue: 0.65, saturation: 0.3, brightness: 1.0).opacity(0.08 * Double(touchInfluence)),
-                    Color(hue: 0.65, saturation: 0.3, brightness: 1.0).opacity(0.02 * Double(touchInfluence)),
+                    Color(hue: 0.65, saturation: 0.3, brightness: 1.0).opacity(0.08 * Double(influence)),
+                    Color(hue: 0.65, saturation: 0.3, brightness: 1.0).opacity(0.02 * Double(influence)),
                     .clear
                 ]),
                 center: center,
@@ -361,12 +448,19 @@ struct CosmicBackground: View {
 
         guard dt > 0, dt < 0.5 else { return }
 
-        if showComet && !cometVisible {
+        // Ramp friendliness smoothly
+        let targetFriendliness: CGFloat = cometFriendly ? 1.0 : 0.0
+        friendlinessRamp += (targetFriendliness - friendlinessRamp) * min(0.8 * dt, 1.0)
+        comet.friendliness = friendlinessRamp
+
+        let shouldBeVisible = showComet || guideTarget != nil
+        let hasTouchInteraction = (mergedTouchPoint != nil && mergedTouchInfluence > 0.01)
+
+        if (shouldBeVisible || hasTouchInteraction) && !cometVisible {
             spawnComet(canvasSize: nil, time: time)
         }
 
-        if !showComet && !cometVisible {
-            // Occasional random bursts during normal use
+        if !shouldBeVisible && !hasTouchInteraction && !cometVisible {
             let sinceLastComet = canvasDate.timeIntervalSince(lastCometTime)
             if sinceLastComet > Double.random(in: 30...60) {
                 spawnComet(canvasSize: nil, time: time)
@@ -374,9 +468,24 @@ struct CosmicBackground: View {
         }
 
         if cometVisible {
-            // Use a reasonable default canvas size for wrapping
             let screenBounds = UIScreen.main.bounds
-            comet.update(dt: dt, canvasSize: screenBounds.size, time: time)
+            let activeTouch = mergedTouchPoint
+            let touchIsActive = mergedTouchInfluence > 0.01
+            comet.update(
+                dt: dt, canvasSize: screenBounds.size, time: time,
+                guideTarget: guideTarget,
+                touchPoint: activeTouch, touchActive: touchIsActive
+            )
+
+            // Subtle haptic when comet first gets close to user's finger
+            if touchIsActive, let touch = activeTouch {
+                let dx = comet.position.x - touch.x
+                let dy = comet.position.y - touch.y
+                let dist = sqrt(dx * dx + dy * dy)
+                if dist < 50 && comet.excitement > 0.3 {
+                    HapticEngine.texture(intensity: min(comet.excitement, 0.6))
+                }
+            }
         }
     }
 

@@ -18,6 +18,7 @@ class CommandRequest(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
     image_data: str | None = Field(default=None, max_length=7_000_000, description="Base64 JPEG, max ~5MB")
+    platform: str | None = Field(default=None, max_length=16, description="Client platform: ios or macos")
 
 
 class Attachment(BaseModel):
@@ -39,6 +40,7 @@ class CommandResponse(BaseModel):
     updated_user_name: str | None = None
     remaining_requests: int | None = None
     clarification: "ClarificationResponse | None" = None
+    detected_language: str | None = None
 
 
 class ConfirmRequest(BaseModel):

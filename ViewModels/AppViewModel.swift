@@ -50,14 +50,23 @@ final class AppViewModel {
     // Tracks whether the user has tapped record this session (for title fade)
     var hasUsedRecording: Bool = false
 
-    // Silence detection — auto-send after pause in speech
-    private var silenceTimer: Task<Void, Never>?
-
     // Orb state
     var orbPhase: OrbPhase = .idle
 
     // Home widgets
     var homeWidgets: [HomeWidgetType] = [.calendar, .briefing, .email, .commute]
+
+    // Post-onboarding guide
+    enum GuideStep: Int, Sendable {
+        case nameCheck   // "Do I have your name right?"
+        case tapToType   // "Tap the message to type instead"
+        case complete
+    }
+    var guideStep: GuideStep = .complete
+
+    // Global touch state — shared across orb, background, and comet
+    var globalTouchPoint: CGPoint?
+    var globalTouchActive: Bool = false
 
     // Subscription
     var subscriptionTier: String = "free"
@@ -76,6 +85,9 @@ final class AppViewModel {
 
     // Vision — captured photo for next command
     var capturedPhoto: UIImage?
+
+    // Audio data for Whisper transcription (captured during voice recording)
+    private var pendingAudioData: Data?
     var cameraBlurAmount: CGFloat = 0
 
     let apiClient = APIClient()
@@ -166,8 +178,8 @@ final class AppViewModel {
         }
     }
 
-    func fetchWidgetData() {
-        if let last = lastWidgetFetch, Date().timeIntervalSince(last) < 300 { return }
+    func fetchWidgetData(forceRefresh: Bool = false) {
+        if !forceRefresh, let last = lastWidgetFetch, Date().timeIntervalSince(last) < 300 { return }
         lastWidgetFetch = Date()
         Task {
             do {
@@ -223,6 +235,34 @@ final class AppViewModel {
         }
     }
 
+    // MARK: - Post-Onboarding Guide
+
+    private var hasCompletedGuide: Bool {
+        get { UserDefaults.standard.bool(forKey: "hasCompletedGuide") }
+        set { UserDefaults.standard.set(newValue, forKey: "hasCompletedGuide") }
+    }
+
+    func startGuideIfNeeded() {
+        guard !hasCompletedGuide else { return }
+        guideStep = .nameCheck
+    }
+
+    func advanceGuide() {
+        switch guideStep {
+        case .nameCheck:
+            guideStep = .tapToType
+        case .tapToType:
+            completeGuide()
+        case .complete:
+            break
+        }
+    }
+
+    func completeGuide() {
+        guideStep = .complete
+        hasCompletedGuide = true
+    }
+
     func saveWidgetPreferences() {
         Task {
             if let data = try? JSONEncoder().encode(homeWidgets),
@@ -273,6 +313,14 @@ final class AppViewModel {
         startRecording()
     }
 
+    func cancelVisionCamera() {
+        showVisionCamera = false
+        withAnimation(.easeInOut(duration: 0.5)) {
+            cameraBlurAmount = 0
+        }
+        orbPhase = .idle
+    }
+
     // MARK: - Proactive Notifications
 
     func checkForProactiveNotifications() {
@@ -291,8 +339,8 @@ final class AppViewModel {
         }
     }
 
-    func fetchUpcomingEvents(days: Int = 1) {
-        if let last = lastEventFetch, Date().timeIntervalSince(last) < 300 { return }
+    func fetchUpcomingEvents(days: Int = 1, forceRefresh: Bool = false) {
+        if !forceRefresh, let last = lastEventFetch, Date().timeIntervalSince(last) < 300 { return }
         lastEventFetch = Date()
         isLoadingEvents = true
         Task {
@@ -341,6 +389,13 @@ final class AppViewModel {
         showChat = true
     }
 
+    func openChatWithCurrentConversation() {
+        if currentConversation == nil {
+            currentConversation = Conversation()
+        }
+        showChat = true
+    }
+
     func selectSuggestion(_ suggestion: String) {
         if currentConversation == nil {
             currentConversation = Conversation()
@@ -378,17 +433,6 @@ final class AppViewModel {
                 if self.orbPhase == .listening && !text.isEmpty {
                     self.orbPhase = .transcribing
                 }
-                // Reset silence timer — auto-send after 1s of no new speech
-                self.resetSilenceTimer()
-            }
-        }
-        // Apple's speech recognizer detected a complete utterance — send immediately
-        speechRecognizer.onFinalTranscript = { [weak self] text in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                guard self.isRecording else { return }
-                self.liveTranscript = text
-                self.stopRecordingAndSend()
             }
         }
         speechRecognizer.onError = { [weak self] errorText in
@@ -423,35 +467,25 @@ final class AppViewModel {
 
     func stopRecordingAndSend() {
         guard isRecording else { return }
-        silenceTimer?.cancel()
-        silenceTimer = nil
 
         // Use liveTranscript (already on MainActor) as the authoritative source
         let text = liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
         speechRecognizer.stopRecording()
         isRecording = false
 
-        guard !text.isEmpty else {
+        // Capture recorded audio for Whisper transcription
+        let audioData = speechRecognizer.consumeRecordedAudio()
+
+        guard !text.isEmpty || audioData != nil else {
             orbPhase = .idle
             liveTranscript = ""
             return
         }
 
-        inputText = text
+        inputText = text.isEmpty ? "..." : text  // placeholder if Apple STT got nothing
         liveTranscript = ""
+        pendingAudioData = audioData
         sendMessage()
-    }
-
-    private func resetSilenceTimer() {
-        silenceTimer?.cancel()
-        // Only start timer if we have some transcript to send
-        guard !liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        silenceTimer = Task {
-            try? await Task.sleep(for: .seconds(1))
-            if !Task.isCancelled && isRecording {
-                stopRecordingAndSend()
-            }
-        }
     }
 
     // MARK: - Messaging
@@ -472,9 +506,11 @@ final class AppViewModel {
         activeCategory = nil
         errorMessage = nil
 
-        // Capture and clear photo for this request
+        // Capture and clear photo and audio for this request
         let photoForRequest = capturedPhoto
         capturedPhoto = nil
+        let audioForRequest = pendingAudioData
+        pendingAudioData = nil
 
         orbPhase = .sending
         showStatus("Command sent...")
@@ -483,39 +519,58 @@ final class AppViewModel {
             do {
                 showStatus("Processing...")
 
-                // Encode photo as base64 JPEG if present
-                var imageBase64: String?
-                if let photo = photoForRequest,
-                   let jpegData = photo.jpegData(compressionQuality: 0.7) {
-                    // Limit to ~500KB
-                    let data = jpegData.count > 500_000
-                        ? (photo.jpegData(compressionQuality: 0.3) ?? jpegData)
-                        : jpegData
-                    imageBase64 = data.base64EncodedString()
-                }
+                let response: CommandResponse
 
-                let response = try await apiClient.sendCommand(
-                    transcript: text,
-                    latitude: LocationManager.shared.currentLatitude,
-                    longitude: LocationManager.shared.currentLongitude,
-                    imageData: imageBase64
-                )
+                if let audioData = audioForRequest {
+                    // Whisper path: send raw audio for server-side transcription (multilingual)
+                    response = try await apiClient.sendAudioCommand(
+                        audioData: audioData,
+                        latitude: LocationManager.shared.currentLatitude,
+                        longitude: LocationManager.shared.currentLongitude
+                    )
+
+                    // Update the user message with Whisper's transcription if it differs
+                    if let whisperText = response.spokenResponse.isEmpty ? nil : text,
+                       whisperText == "..." {
+                        // The placeholder was used — update chat with what Whisper heard
+                    }
+                } else {
+                    // Text path: Apple STT already transcribed, or user typed
+                    var imageBase64: String?
+                    if let photo = photoForRequest,
+                       let jpegData = photo.jpegData(compressionQuality: 0.7) {
+                        let data = jpegData.count > 500_000
+                            ? (photo.jpegData(compressionQuality: 0.3) ?? jpegData)
+                            : jpegData
+                        imageBase64 = data.base64EncodedString()
+                    }
+
+                    response = try await apiClient.sendCommand(
+                        transcript: text,
+                        latitude: LocationManager.shared.currentLatitude,
+                        longitude: LocationManager.shared.currentLongitude,
+                        imageData: imageBase64
+                    )
+                }
                 showStatus("Executed successfully")
                 dismissStatusAfterDelay()
                 handleCommandResponse(response)
                 orbPhase = .success
+                HapticEngine.success()
                 returnToIdleAfterDelay(seconds: 1.5)
             } catch let error as APIError {
                 showStatus("Failed: \(error.localizedDescription)")
                 dismissStatusAfterDelay(seconds: 4)
                 handleError(error)
                 orbPhase = .error
+                HapticEngine.error()
                 returnToIdleAfterDelay(seconds: 2.0)
             } catch {
                 showStatus("Failed: \(error.localizedDescription)")
                 dismissStatusAfterDelay(seconds: 4)
                 handleError(.networkError(error))
                 orbPhase = .error
+                HapticEngine.error()
                 returnToIdleAfterDelay(seconds: 2.0)
             }
         }
@@ -576,10 +631,6 @@ final class AppViewModel {
         displayedResponse = ""
         responseDismissTask?.cancel()
         typewriterTask?.cancel()
-        silenceTimer?.cancel()
-        // Keep server-side session intact for conversation continuity
-        // Only clear when the user explicitly wants to forget context
-        silenceTimer = nil
         orbPhase = .idle
         speechRecognizer.stopRecording()
     }
@@ -700,6 +751,14 @@ final class AppViewModel {
 
         // Persist after each response
         persistConversations()
+
+        // Refresh widget data in case the command changed settings (e.g. work address)
+        fetchWidgetData(forceRefresh: true)
+
+        // Advance post-onboarding guide after first response
+        if guideStep == .nameCheck {
+            advanceGuide()
+        }
     }
 
     private func handleError(_ error: APIError) {

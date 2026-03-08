@@ -1,0 +1,10 @@
+[skill]
+name = "imessage_reader"
+display_name = "iMessage Reader"
+description = "Read iMessage conversations on macOS (macos_messages.*)"
+tool_modules = ["macos_messages"]
+planner_instructions = [
+    "These tools only work on macOS clients. Use search_conversations to find a thread, then read_thread to read it.",
+    "Use get_recent for recent messages across all conversations.",
+    "Read-only — cannot send messages.",
+]

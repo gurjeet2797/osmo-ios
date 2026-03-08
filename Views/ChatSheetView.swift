@@ -76,6 +76,7 @@ struct ChatSheetView: View {
             FlowLayout(spacing: 10) {
                 ForEach(viewModel.suggestions, id: \.self) { suggestion in
                     Button {
+                        HapticEngine.tap()
                         viewModel.selectSuggestion(suggestion)
                     } label: {
                         Text(suggestion)

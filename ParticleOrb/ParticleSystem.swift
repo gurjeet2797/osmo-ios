@@ -69,6 +69,9 @@ nonisolated final class ParticleSystem: @unchecked Sendable {
     // Current modulation (stored for swirlTarget access to breathe params)
     private(set) var currentModulation: MotionModulation = .idle
 
+    // Glow intensity (ramped smoothly each frame — lives here to avoid @State mutation in Canvas)
+    var glowIntensity: Float = 0.0
+
     // Timing
     private var lastUpdateTime: Double?
     /// Exposed for external dt calculations (glow ramp)

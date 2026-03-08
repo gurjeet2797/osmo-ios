@@ -38,10 +38,29 @@ nonisolated protocol MotionController: Sendable {
 
 // MARK: - Idle Breath
 
-/// Calm defaults that match the current hardcoded particle behavior.
+/// Calm idle with layered organic breathing for a fluid, living feel.
 nonisolated struct IdleBreath: MotionController, Sendable {
     func modulate(time: Float, dt: Float, stateProgress: Float) -> MotionModulation {
-        .idle
+        // Layered sine waves for organic breathing
+        let breath1 = sin(time * 0.4) * 0.06
+        let breath2 = sin(time * 0.7 + 1.2) * 0.03
+        let breath3 = sin(time * 1.1 + 2.5) * 0.015
+        let breathe = 0.12 + breath1 + breath2 + breath3
+
+        // Gentle brightness undulation
+        let brightWave = sin(time * 0.3) * 0.05 + sin(time * 0.8 + 0.7) * 0.03
+
+        return MotionModulation(
+            springStiffness: 5.0,
+            springDamping: 2.8,
+            noiseMultiplier: 1.0,
+            orbitSpeedMultiplier: 1.0 + sin(time * 0.25) * 0.08,
+            breatheAmplitude: breathe,
+            breatheFrequency: 0.5,
+            brightnessBase: 0.5 + brightWave,
+            brightnessPulseAmp: 0.15,
+            globalScale: 1.0
+        )
     }
 }
 
